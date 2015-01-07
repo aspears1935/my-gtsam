@@ -194,11 +194,22 @@ int main(int argc, char** argv) {
       initial.insert(++n, Pose3(Rot3::ypr(1.5*PI+(i*PI/16)+0.1,0.1,0.1), Point3(0.1,0.1,0.1)));
     }
 
-  initial.print("\nInitial Estimate:\n"); // print
+  //initial.print("\nInitial Estimate:\n"); // print
+
+  //AMS Custom Print:
+  for(i=1;i<n+1;i++)
+    {
+      cout << i << " Initial: x,y,yaw=" << initial.at<Pose3>(i).x() << "," << initial.at<Pose3>(i).y() << "," << initial.at<Pose3>(i).rotation().yaw() << endl;
+    }
 
   // optimize using Levenberg-Marquardt optimization
   Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
-  result.print("Final Result:\n");
+  //result.print("Final Result:\n");
+
+  for(i=1;i<n+1;i++)
+    {
+      cout << i << " Final: x,y,yaw=" << result.at<Pose3>(i).x() << "," << result.at<Pose3>(i).y() << "," << result.at<Pose3>(i).rotation().yaw() << endl;
+    }
 
   // Calculate and print marginal covariances for all variables
   cout.precision(2);
