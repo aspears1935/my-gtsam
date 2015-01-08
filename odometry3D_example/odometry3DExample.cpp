@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
   Pose3 odometry_x(Rot3::ypr(0,0,0), Point3(1,0,0));
   Pose3 odometry_y(Rot3::ypr(0,0,0), Point3(0,1,0));
   Pose3 odometry_z(Rot3::ypr(0,0,0), Point3(0,0,1));
-  Pose3 odometry_yaw(Rot3::ypr(PI/16,0,0), Point3(0,0,0));
+  Pose3 odometry_yaw(Rot3::ypr(PI/160,0,0), Point3(0,0,0));
   //  odometry.print("Odometry=");
 
   // For simplicity, we will use the same noise model for each odometry factor
@@ -107,103 +107,170 @@ int main(int argc, char** argv) {
   int n=1; //Start at node 1
 
   int i=0;
-  for(i=0; i<10; i++)
+
+  /*********************** Add Camera Nodes *************************/
+  for(i=0; i<100; i++)
     {
       //Go ten in x direction
       graph.add(BetweenFactor<Pose3>(n, n+1, odometry_x, odometryNoise));
       n++;
     }
-    for(i=0; i<8; i++)
+    for(i=0; i<80; i++)
     {
       //Rotate 90 deg
       graph.add(BetweenFactor<Pose3>(n, n+1, odometry_yaw, odometryNoise));
       n++;
     }
 
-  for(i=0; i<10; i++)
+  for(i=0; i<100; i++)
     {
       //Go ten in x direction
       graph.add(BetweenFactor<Pose3>(n, n+1, odometry_x, odometryNoise));
       n++;
     }
-  for(i=0; i<8; i++)
+  for(i=0; i<80; i++)
     {
       //Rotate 90 deg
       graph.add(BetweenFactor<Pose3>(n, n+1, odometry_yaw, odometryNoise));
       n++;   
     }
 
-  for(i=0; i<10; i++)
+  for(i=0; i<100; i++)
     {
       //Go ten in x direction
       graph.add(BetweenFactor<Pose3>(n, n+1, odometry_x, odometryNoise));
       n++;    
     }
-  for(i=0; i<8; i++)
+  for(i=0; i<80; i++)
     {
       //Rotate 90 deg
       graph.add(BetweenFactor<Pose3>(n, n+1, odometry_yaw, odometryNoise));
       n++;    
     }
 
-  for(i=0; i<10; i++)
+  for(i=0; i<100; i++)
     {
       //Go ten in x direction
       graph.add(BetweenFactor<Pose3>(n, n+1, odometry_x, odometryNoise));
       n++;    
     }
-  for(i=0; i<8; i++)
+  for(i=0; i<80; i++)
     {
       //Rotate 90 deg
       graph.add(BetweenFactor<Pose3>(n, n+1, odometry_yaw, odometryNoise));
       n++;     
     }
-  cout << "TOTAL NODES:" << n << endl << endl;
+  cout << "TOTAL CAM NODES:" << n << endl << endl;
 
-  graph.print("\nFactor Graph:\n"); // print
+  /*********************Now Add in sonar nodes *******************/
+
+  odometry_x = Pose3(Rot3::ypr(0,0,0), Point3(10,0,0));
+  odometry_y = Pose3(Rot3::ypr(0,0,0), Point3(0,10,0));
+  odometry_z = Pose3(Rot3::ypr(0,0,0), Point3(0,0,10));
+  odometry_yaw = Pose3(Rot3::ypr(PI/16,0,0), Point3(0,0,0));
+
+  n=1;
+  for(i=0; i<10; i++)
+    {
+      //Go ten in x direction
+      graph.add(BetweenFactor<Pose3>(n, n+10, odometry_x, odometryNoise));
+      n += 10;
+    }
+    for(i=0; i<8; i++)
+    {
+      //Rotate 90 deg
+      graph.add(BetweenFactor<Pose3>(n, n+10, odometry_yaw, odometryNoise));
+      n += 10;
+    }
+
+  for(i=0; i<10; i++)
+    {
+      //Go ten in x direction
+      graph.add(BetweenFactor<Pose3>(n, n+10, odometry_x, odometryNoise));
+      n += 10;
+    }
+  for(i=0; i<8; i++)
+    {
+      //Rotate 90 deg
+      graph.add(BetweenFactor<Pose3>(n, n+10, odometry_yaw, odometryNoise));
+      n += 10;   
+    }
+
+  for(i=0; i<10; i++)
+    {
+      //Go ten in x direction
+      graph.add(BetweenFactor<Pose3>(n, n+10, odometry_x, odometryNoise));
+      n += 10;    
+    }
+  for(i=0; i<8; i++)
+    {
+      //Rotate 90 deg
+      graph.add(BetweenFactor<Pose3>(n, n+10, odometry_yaw, odometryNoise));
+      n += 10;    
+    }
+
+  for(i=0; i<10; i++)
+    {
+      //Go ten in x direction
+      graph.add(BetweenFactor<Pose3>(n, n+10, odometry_x, odometryNoise));
+      n += 10;    
+    }
+  for(i=0; i<8; i++)
+    {
+      //Rotate 90 deg
+      graph.add(BetweenFactor<Pose3>(n, n+10, odometry_yaw, odometryNoise));
+      n += 10;     
+    }
+
+  cout << "TOTAL SONAR NODES:" << n << endl << endl;
+
+  //graph.print("\nFactor Graph:\n"); // print
 
   // Create the data structure to hold the initialEstimate estimate to the solution
   // For illustrative purposes, these have been deliberately set to incorrect values
   Values initial;
+  double addedErr = 1;
  
   n=1; //Begin again at node 1
-  initial.insert(n, Pose3(Rot3::ypr(0.1,0.1,0.1), Point3(0.1,0.1,0.1)));
+  initial.insert(n, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
 
-  for(i=1; i<11; i++)
+  for(i=1; i<101; i++)
     {
-      initial.insert(++n, Pose3(Rot3::ypr(0.1,0.1,0.1), Point3(i+0.1,0.1,0.1)));
+      initial.insert(++n, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(i+addedErr,addedErr,addedErr)));
     }
-  for(i=1; i<9; i++)
+  for(i=1; i<81; i++)
     {
-      initial.insert(++n, Pose3(Rot3::ypr((i*PI/16)+0.1,0.1,0.1), Point3(10.1,0.1,0.1)));
-    }
-
-  for(i=1; i<11; i++)
-    {
-      initial.insert(++n, Pose3(Rot3::ypr(PI/2+0.1,0.1,0.1), Point3(10.1,i+0.1,0.1)));
-    }
-  for(i=1; i<9; i++)
-    {
-      initial.insert(++n, Pose3(Rot3::ypr(PI/2+(i*PI/16)+0.1,0.1,0.1), Point3(10.1,10.1,0.1)));
+      initial.insert(++n, Pose3(Rot3::ypr((i*PI/160)+addedErr,addedErr,addedErr), Point3(100+addedErr,addedErr,addedErr)));
     }
 
-  for(i=1; i<11; i++)
+  for(i=1; i<101; i++)
     {
-      initial.insert(++n, Pose3(Rot3::ypr(PI+0.1,0.1,0.1), Point3(10.1-i,10.1,0.1)));
+      initial.insert(++n, Pose3(Rot3::ypr(PI/2+addedErr,addedErr,addedErr), Point3(100+addedErr,i+addedErr,addedErr)));
     }
-  for(i=1; i<9; i++)
+  for(i=1; i<81; i++)
     {
-      initial.insert(++n, Pose3(Rot3::ypr(PI+(i*PI/16)+0.1,0.1,0.1), Point3(0.1,10.1,0.1)));
+      initial.insert(++n, Pose3(Rot3::ypr(PI/2+(i*PI/160)+addedErr,addedErr,addedErr), Point3(100+addedErr,100+addedErr,addedErr)));
     }
 
-  for(i=1; i<11; i++)
+  for(i=1; i<101; i++)
     {
-      initial.insert(++n, Pose3(Rot3::ypr(1.5*PI+0.1,0.1,0.1), Point3(0.1,10.1-i,0.1)));
+      initial.insert(++n, Pose3(Rot3::ypr(PI+addedErr,addedErr,addedErr), Point3(100+addedErr-i,100+addedErr,addedErr)));
     }
-  for(i=1; i<9; i++)
+  for(i=1; i<81; i++)
     {
-      initial.insert(++n, Pose3(Rot3::ypr(1.5*PI+(i*PI/16)+0.1,0.1,0.1), Point3(0.1,0.1,0.1)));
+      initial.insert(++n, Pose3(Rot3::ypr(PI+(i*PI/160)+addedErr,addedErr,addedErr), Point3(addedErr,100+addedErr,addedErr)));
     }
+
+  for(i=1; i<101; i++)
+    {
+      initial.insert(++n, Pose3(Rot3::ypr(1.5*PI+addedErr,addedErr,addedErr), Point3(addedErr,100+addedErr-i,addedErr)));
+    }
+  for(i=1; i<81; i++)
+    {
+      initial.insert(++n, Pose3(Rot3::ypr(1.5*PI+(i*PI/160)+addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+    }
+
+  cout << "Initial Estimate Nodes: " << n << endl;
      
   //initial.print("\nInitial Estimate:\n"); // print
 
