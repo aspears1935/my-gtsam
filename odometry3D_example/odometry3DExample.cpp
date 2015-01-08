@@ -88,7 +88,9 @@ int main(int argc, char** argv) {
 
   // Add a prior on the first pose, setting it to the origin
   // A prior factor consists of a mean and a noise model (covariance matrix)
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
+  //  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
+  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
+
   graph.add(PriorFactor<Pose3>(1, priorMean, priorNoise));
 
   // Add odometry factors
@@ -99,7 +101,8 @@ int main(int argc, char** argv) {
   //  odometry.print("Odometry=");
 
   // For simplicity, we will use the same noise model for each odometry factor
-  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
+  //  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
+  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Variances((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
   // Create odometry (Between) factors between consecutive poses
   int n=1; //Start at node 1
 
@@ -107,45 +110,53 @@ int main(int argc, char** argv) {
   for(i=0; i<10; i++)
     {
       //Go ten in x direction
-      graph.add(BetweenFactor<Pose3>(n, ++n, odometry_x, odometryNoise));
+      graph.add(BetweenFactor<Pose3>(n, n+1, odometry_x, odometryNoise));
+      n++;
     }
-  for(i=0; i<8; i++)
+    for(i=0; i<8; i++)
     {
       //Rotate 90 deg
-      graph.add(BetweenFactor<Pose3>(n, ++n, odometry_yaw, odometryNoise));
+      graph.add(BetweenFactor<Pose3>(n, n+1, odometry_yaw, odometryNoise));
+      n++;
     }
 
   for(i=0; i<10; i++)
     {
       //Go ten in x direction
-      graph.add(BetweenFactor<Pose3>(n, ++n, odometry_x, odometryNoise));
+      graph.add(BetweenFactor<Pose3>(n, n+1, odometry_x, odometryNoise));
+      n++;
     }
   for(i=0; i<8; i++)
     {
       //Rotate 90 deg
-      graph.add(BetweenFactor<Pose3>(n, ++n, odometry_yaw, odometryNoise));
+      graph.add(BetweenFactor<Pose3>(n, n+1, odometry_yaw, odometryNoise));
+      n++;   
     }
 
   for(i=0; i<10; i++)
     {
       //Go ten in x direction
-      graph.add(BetweenFactor<Pose3>(n, ++n, odometry_x, odometryNoise));
+      graph.add(BetweenFactor<Pose3>(n, n+1, odometry_x, odometryNoise));
+      n++;    
     }
   for(i=0; i<8; i++)
     {
       //Rotate 90 deg
-      graph.add(BetweenFactor<Pose3>(n, ++n, odometry_yaw, odometryNoise));
+      graph.add(BetweenFactor<Pose3>(n, n+1, odometry_yaw, odometryNoise));
+      n++;    
     }
 
   for(i=0; i<10; i++)
     {
       //Go ten in x direction
-      graph.add(BetweenFactor<Pose3>(n, ++n, odometry_x, odometryNoise));
+      graph.add(BetweenFactor<Pose3>(n, n+1, odometry_x, odometryNoise));
+      n++;    
     }
   for(i=0; i<8; i++)
     {
       //Rotate 90 deg
-      graph.add(BetweenFactor<Pose3>(n, ++n, odometry_yaw, odometryNoise));
+      graph.add(BetweenFactor<Pose3>(n, n+1, odometry_yaw, odometryNoise));
+      n++;     
     }
   cout << "TOTAL NODES:" << n << endl << endl;
 
@@ -193,13 +204,24 @@ int main(int argc, char** argv) {
     {
       initial.insert(++n, Pose3(Rot3::ypr(1.5*PI+(i*PI/16)+0.1,0.1,0.1), Point3(0.1,0.1,0.1)));
     }
-
+     
   //initial.print("\nInitial Estimate:\n"); // print
 
   //AMS Custom Print:
   for(i=1;i<n+1;i++)
     {
-      cout << i << " Initial: x,y,yaw=" << initial.at<Pose3>(i).x() << "," << initial.at<Pose3>(i).y() << "," << initial.at<Pose3>(i).rotation().yaw() << endl;
+      double xprint = initial.at<Pose3>(i).x();
+      double yprint = initial.at<Pose3>(i).y();
+      double yawprint = initial.at<Pose3>(i).rotation().yaw();
+
+      if(abs(xprint) < 0.001)
+	xprint = 0;
+      if(abs(yprint) < 0.001)
+	yprint = 0;
+      if(abs(yawprint) < 0.001)
+	yawprint = 0;
+
+      cout << i << " Initial: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
     }
 
   // optimize using Levenberg-Marquardt optimization
@@ -208,7 +230,18 @@ int main(int argc, char** argv) {
 
   for(i=1;i<n+1;i++)
     {
-      cout << i << " Final: x,y,yaw=" << result.at<Pose3>(i).x() << "," << result.at<Pose3>(i).y() << "," << result.at<Pose3>(i).rotation().yaw() << endl;
+      double xprint = result.at<Pose3>(i).x();
+      double yprint = result.at<Pose3>(i).y();
+      double yawprint = result.at<Pose3>(i).rotation().yaw();
+
+      if(abs(xprint) < 0.001)
+	xprint = 0;
+      if(abs(yprint) < 0.001)
+	yprint = 0;
+      if(abs(yawprint) < 0.001)
+	yawprint = 0;
+
+      cout << i << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
     }
 
   // Calculate and print marginal covariances for all variables
