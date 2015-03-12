@@ -119,6 +119,10 @@ int main(int argc, char** argv) {
   int i;
   for(i = 1; i<10; i++)
     {
+      graph.add(BetweenFactor<Pose3>(i, i+1, odometry_x, odometryNoise));
+    }
+  for(i = 1; i<10; i++)
+    {
       graph.add(EssentialMatrixConstraint(i, i+1, e_matrix, eMatNoise));
     }
   int n = i-1;
@@ -128,7 +132,7 @@ int main(int argc, char** argv) {
   // Create the data structure to hold the initialEstimate estimate to the solution
   // For illustrative purposes, these have been deliberately set to incorrect values
   Values initial;
-  double addedErr = 0;
+  double addedErr = 0.1;
  
   initial.insert(1, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
 
