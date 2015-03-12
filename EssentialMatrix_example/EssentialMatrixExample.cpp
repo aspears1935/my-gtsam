@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
 
   // For simplicity, we will use the same noise model for each odometry factor
   //  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
-  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Variances((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
+  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Variances((Vector(6) << 1, 1, 1, 1, 1, 1));
   // Create odometry (Between) factors between consecutive poses
 
   Rot3 zeroRot3 = Rot3::ypr(0, 0, 0);
@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
     {
       graph.add(BetweenFactor<Pose3>(i, i+1, odometry_x, odometryNoise));
     }
-  for(i = 1; i<10; i++)
+    for(i = 1; i<10; i++)
     {
       graph.add(EssentialMatrixConstraint(i, i+1, e_matrix, eMatNoise));
     }
@@ -187,9 +187,14 @@ int main(int argc, char** argv) {
   // Calculate and print marginal covariances for all variables
   cout.precision(2);
   Marginals marginals(graph, result);
-  cout << "x1 covariance:\n" << marginals.marginalCovariance(1) << endl;
-  cout << "x2 covariance:\n" << marginals.marginalCovariance(2) << endl;
-  cout << "x3 covariance:\n" << marginals.marginalCovariance(3) << endl;
+  for(i=1;i<n+1;i++)
+    {
+      cout << "x" << i << " covariance:\n" << marginals.marginalCovariance(i) << endl;
+    }
+
+  cout << "Initial Estimate Error: " <<  graph.error(initial) << endl;
+  cout << "Result Error: " << graph.error(result) << endl;
+
 
   return 0;
 }
