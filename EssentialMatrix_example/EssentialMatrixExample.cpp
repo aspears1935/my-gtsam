@@ -1,3 +1,6 @@
+//TODO: need to change size of x,y,z, arrays to actual size of frames from 256.
+
+
 /* ----------------------------------------------------------------------------
 
  * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
@@ -62,10 +65,73 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/slam/EssentialMatrixConstraint.h>
 
+#include <stdio.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <stdlib.h>
+
 using namespace std;
 using namespace gtsam;
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
+  char inFileName[256];
+
+  if(argc < 2)
+    {
+      cout << "Not Enough Args. Usage: ./gtsam <input CSV file with x,y,theta>" << endl;
+    }
+  else
+    {
+      strcpy(inFileName, argv[1]);  
+    }
+
+  ifstream inFile(inFileName);
+
+  string tmpstring;
+  //  getline(inFile,tmpstring,'\n');
+  getline(inFile,tmpstring,';');
+  cout << tmpstring << endl;
+  if(strcmp(tmpstring.c_str(),"x")==0) //FOUND x HEADING
+    cout << "FOUND X HEADING!" << endl;
+  else
+    cout << "DIDN'T FIND X HEADING!" << endl;
+
+  getline(inFile,tmpstring,';');
+  cout << tmpstring << endl;
+  if(strcmp(tmpstring.c_str(),"y")==0) //FOUND y HEADING
+    cout << "FOUND Y HEADING!" << endl;
+  else
+    cout << "DIDN'T FIND Y HEADING!" << endl;
+
+  getline(inFile,tmpstring,';');
+  cout << tmpstring << endl;
+  if(strcmp(tmpstring.c_str(),"z")==0) //FOUND z HEADING
+    cout << "FOUND Z HEADING!" << endl;
+  else
+    cout << "DIDN'T FIND Z HEADING!" << endl;
+
+  float * x_arr;
+  float * y_arr;
+  float * z_arr;
+  x_arr = new float[256];
+  y_arr = new float[256];
+  z_arr = new float[256];
+
+  for(int i=0; i<256; i++)
+    {
+      getline(inFile,tmpstring,';');
+      x_arr[i] = (float)(atof(tmpstring.c_str()));
+      getline(inFile,tmpstring,';');
+      y_arr[i] = (float)(atof(tmpstring.c_str()));
+      getline(inFile,tmpstring,';');
+      z_arr[i] = (float)(atof(tmpstring.c_str()));
+    }    
+  for(int i=0; i<256; i++)
+    {
+      cout << x_arr[i] << "," << y_arr[i] << "," << z_arr[i] << endl;
+    }
 
   // Create an empty nonlinear factor graph
   NonlinearFactorGraph graph;
