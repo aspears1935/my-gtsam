@@ -74,6 +74,14 @@
 using namespace std;
 using namespace gtsam;
 
+#define VERBOSE false
+#define CAM_CORNERS_WEIGHT 0.3333333
+#define CAM_MATCHES_WEIGHT 0.3333333
+#define CAM_INLIERS_WEIGHT 0.3333333
+#define MAX_CAM_CORNERS 100 //Should most likely be 1000
+#define MAX_SON_CORNERS 100 //Should most likely be 1000
+#define ZERO_NOISE 0.00001
+
 int main(int argc, char** argv) 
 {
   char sonInputFileName[256];
@@ -93,9 +101,39 @@ int main(int argc, char** argv)
   ifstream inFileSon(sonInputFileName);
   ifstream inFileCam(camInputFileName);
 
-
   string tmpstring;
+  
+  int lengthSon, lengthCam;
 
+  //Get number of rows for each file input:
+  getline(inFileSon,tmpstring,';'); //First line should just have length listed
+  if(strcmp(tmpstring.c_str(),"length=")==0) //Found correct string
+    cout << "Found length" << endl;
+  else
+    {
+      cout << "Couldn't find length." << endl;
+      return 0;
+    }
+  getline(inFileSon,tmpstring,';'); //First line should just have length listed
+  lengthSon = (int)(atoi(tmpstring.c_str()));
+  cout << "lengthSon=" << lengthSon << endl;
+  getline(inFileSon,tmpstring,'\n'); //Discard rest of line
+
+
+  getline(inFileCam,tmpstring,';'); //First line should just have length listed
+  if(strcmp(tmpstring.c_str(),"length=")==0) //Found correct string
+    cout << "Found length" << endl;
+  else
+    {
+      cout << "Couldn't find length." << endl;
+      return 0;
+    }
+  getline(inFileCam,tmpstring,';'); //First line should just have length listed
+  lengthCam = (int)(atoi(tmpstring.c_str()));
+  cout << "lengthCam=" << lengthCam << endl;
+  getline(inFileCam,tmpstring,'\n'); //Discard rest of line
+
+  //--------------Look for headings:----------------------//
   getline(inFileSon,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"t1")==0) //FOUND t1 HEADING
     cout << "FOUND t1 HEADING! - " << tmpstring << endl;
@@ -125,6 +163,24 @@ int main(int argc, char** argv)
     cout << "FOUND YAW HEADING! - " << tmpstring << endl;
   else
     cout << "DIDN'T FIND YAW HEADING! - " << tmpstring << endl;
+
+  getline(inFileSon,tmpstring,';');
+  if(strcmp(tmpstring.c_str(),"numCorners")==0) //FOUND son numCorners HEADING
+    cout << "FOUND NUMCORNERS HEADING! - " << tmpstring << endl;
+  else
+    cout << "DIDN'T FIND NUMCORNERS HEADING! - " << tmpstring << endl;
+
+  getline(inFileSon,tmpstring,';');
+  if(strcmp(tmpstring.c_str(),"numMatches")==0) //FOUND son numMatches HEADING
+    cout << "FOUND NUMMATCHES HEADING! - " << tmpstring << endl;
+  else
+    cout << "DIDN'T FIND NUMMATCHES HEADING! - " << tmpstring << endl;
+
+  getline(inFileSon,tmpstring,';');
+  if(strcmp(tmpstring.c_str(),"numInliers")==0) //FOUND son numInliers HEADING
+    cout << "FOUND NUMINLIERS HEADING! - " << tmpstring << endl;
+  else
+    cout << "DIDN'T FIND NUMINLIERS HEADING! - " << tmpstring << endl;
 
   //Read in camera input file headings:
   getline(inFileCam,tmpstring,';');
@@ -175,17 +231,41 @@ int main(int argc, char** argv)
   else
     cout << "DIDN'T FIND yaw HEADING! - " << tmpstring << endl;
 
+  getline(inFileCam,tmpstring,';');
+  if(strcmp(tmpstring.c_str(),"numCorners")==0) //FOUND cam numCorners HEADING
+    cout << "FOUND NUMCORNERS HEADING! - " << tmpstring << endl;
+  else
+    cout << "DIDN'T FIND NUMCORNERS HEADING! - " << tmpstring << endl;
+
+  getline(inFileCam,tmpstring,';');
+  if(strcmp(tmpstring.c_str(),"numMatches")==0) //FOUND cam numMatches HEADING
+    cout << "FOUND NUMMATCHES HEADING! - " << tmpstring << endl;
+  else
+    cout << "DIDN'T FIND NUMMATCHES HEADING! - " << tmpstring << endl;
+
+  getline(inFileCam,tmpstring,';');
+  if(strcmp(tmpstring.c_str(),"numInliers")==0) //FOUND cam numInliers HEADING
+    cout << "FOUND NUMINLIERS HEADING! - " << tmpstring << endl;
+  else
+    cout << "DIDN'T FIND NUMINLIERS HEADING! - " << tmpstring << endl;
+
   //Create input data arrays:
   float * t1son_arr;
   float * t2son_arr;
   float * x_son_arr;
   float * y_son_arr;
   float * yaw_son_arr;
+  float * numCorners_son_arr;
+  float * numMatches_son_arr;
+  float * numInliers_son_arr;
   t1son_arr = new float[32];
   t2son_arr = new float[32];
   x_son_arr = new float[32];
   y_son_arr = new float[32];
   yaw_son_arr = new float[32];
+  numCorners_son_arr = new float[32];
+  numMatches_son_arr = new float[32];
+  numInliers_son_arr = new float[32];
 
   float * t1cam_arr;
   float * t2cam_arr;
@@ -195,6 +275,9 @@ int main(int argc, char** argv)
   float * roll_arr;
   float * pitch_arr;
   float * yaw_arr;
+  float * numCorners_arr;
+  float * numMatches_arr;
+  float * numInliers_arr;
   t1cam_arr = new float[32];
   t2cam_arr = new float[32];
   xunit_arr = new float[32];
@@ -203,9 +286,12 @@ int main(int argc, char** argv)
   roll_arr = new float[32];
   pitch_arr = new float[32];
   yaw_arr = new float[32];
+  numCorners_arr = new float[32];
+  numMatches_arr = new float[32];
+  numInliers_arr = new float[32];
 
   //Read in the input data:
-  for(int i=0; i<32; i++)
+  for(int i=0; i<lengthSon; i++)
     {
       //Sonar Data:
       getline(inFileSon,tmpstring,';');
@@ -220,6 +306,15 @@ int main(int argc, char** argv)
       getline(inFileSon,tmpstring,';');
       yaw_son_arr[i] = (float)(atof(tmpstring.c_str()));
 
+      getline(inFileSon,tmpstring,';');
+      numCorners_son_arr[i] = (float)(atof(tmpstring.c_str()));
+      getline(inFileSon,tmpstring,';');
+      numMatches_son_arr[i] = (float)(atof(tmpstring.c_str()));
+      getline(inFileSon,tmpstring,';');
+      numInliers_son_arr[i] = (float)(atof(tmpstring.c_str()));
+    }
+  for(int i=0; i<lengthCam; i++)
+    {
       //Camera Data:
       getline(inFileCam,tmpstring,';');
       t1cam_arr[i] = (float)(atof(tmpstring.c_str()));
@@ -239,14 +334,29 @@ int main(int argc, char** argv)
       pitch_arr[i] = (float)(atof(tmpstring.c_str()));
       getline(inFileCam,tmpstring,';');
       yaw_arr[i] = (float)(atof(tmpstring.c_str()));
+
+      getline(inFileCam,tmpstring,';');
+      numCorners_arr[i] = (float)(atof(tmpstring.c_str()));
+      getline(inFileCam,tmpstring,';');
+      numMatches_arr[i] = (float)(atof(tmpstring.c_str()));
+      getline(inFileCam,tmpstring,';');
+      numInliers_arr[i] = (float)(atof(tmpstring.c_str()));
     }    
 
-  for(int i=0; i<32; i++)
+  //Print out the data that was read in:
+  if(VERBOSE)
     {
-      cout << "x,y,z=" <<  xunit_arr[i] << "," << yunit_arr[i] << "," << zunit_arr[i] << endl;
-      cout << "roll,pitch,yaw=" << roll_arr[i] << "," << pitch_arr[i] << "," << yaw_arr[i] << endl;
-      cout << "xson,yson,yawson=" << x_son_arr[i] << "," << y_son_arr[i] << "," << yaw_son_arr[i] << endl;
+      for(int i=0; i<lengthSon; i++)
+	{
+	  cout << "xson,yson,yawson=" << x_son_arr[i] << "," << y_son_arr[i] << "," << yaw_son_arr[i] << endl;
+	}
+      for(int i=0; i<lengthCam; i++)
+	{
+	  cout << "x,y,z=" <<  xunit_arr[i] << "," << yunit_arr[i] << "," << zunit_arr[i] << endl;
+	  cout << "roll,pitch,yaw=" << roll_arr[i] << "," << pitch_arr[i] << "," << yaw_arr[i] << endl;
+	}
     }
+
 
   //Write the column headings on the output file:
   ofstream outfile("outputGTSAM.csv");
@@ -277,7 +387,7 @@ int main(int argc, char** argv)
   // Add a prior on the first pose, setting it to the origin
   // A prior factor consists of a mean and a noise model (covariance matrix)
   //  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
+  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
   graph.add(PriorFactor<Pose3>(1, priorMean, priorNoise));
 
@@ -291,35 +401,71 @@ int main(int argc, char** argv)
 
   // For simplicity, we will use the same noise model for each odometry factor
   //  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
-  noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << 1, 1, 1, 1, 1, 1));
-  // Create odometry (Between) factors between consecutive poses
+  //noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << 1, 1, 1, 1, 1, 1));
 
   //EssentialMatrix e_matrix(zeroRot3, xUnit3);
   EssentialMatrix e_matrix(Rot3::ypr(yaw_arr[0],pitch_arr[0],roll_arr[0]), Unit3(xunit_arr[0],yunit_arr[0],zunit_arr[0]));
 
-  noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << 0.1, 0.1, 0.1, 0.1, 0.1));
+  //noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << 0.1, 0.1, 0.1, 0.1, 0.1));
 
-  /*********************** Add Camera Nodes *************************/
 
+  /*********************** Add Sonar Nodes *************************/
   int i;
-  for(i = 1; i<10; i++)
+  for(i = 1; i<10; i++)    
     {
+      double sonNoiseMult;
+      cout << "son corners,matches,inliers=" << numCorners_son_arr[i] << "," << numMatches_son_arr[i] << "," << numInliers_son_arr[i] << endl;
+      sonNoiseMult = 1-(numInliers_son_arr[i]/MAX_SON_CORNERS);
+      if(sonNoiseMult < 0.01) //Avoid zeros, if 1000 maxCorners this is 990 inliers.
+	sonNoiseMult = 0.01;
+      
+      cout << "Son Noise multipler=" << sonNoiseMult << endl;
+      double sonNoiseTransl = 10*sonNoiseMult; //allInliers=>0.1m, noInliers=>10m
+      double sonNoiseRot = 10*sonNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
+
+      noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << sonNoiseTransl, sonNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonNoiseRot));
+      
       graph.add(BetweenFactor<Pose3>(i, i+1, Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
     }
-    for(i = 1; i<10; i++)
+
+  /*********************** Add Camera Nodes *************************/
+  for(i = 1; i<10; i++)
     {
+      double camNoiseMult;
+      cout << "corners,matches,inliers=" << numCorners_arr[i] << "," << numMatches_arr[i] << "," << numInliers_arr[i] << endl;
+      //DEBUG: USE MATCHES, CORNERS, and INLIERS for Noise calculation:
+      /*if(numInliers_arr[i] != 0)
+	camNoiseMult = (CAM_MATCHES_WEIGHT*(numCorners_arr[i]/numMatches_arr[i]))+(CAM_INLIERS_WEIGHT*(numMatches_arr[i]/numInliers_arr[i]))+(CAM_CORNERS_WEIGHT*(MAX_CAM_CORNERS/numCorners_arr[i])); //Inversly related to matches/corners, inliers/matches, and corners. This reduces to just 1/numInliers?. 
+      else
+	camNoiseMult = 1;
+      */
+      //END DEBUG: USE MATCHES, CORNERS, and INLIERS for Noise calculation:
+
+      //Just use numInliers for noise calculation 
+      camNoiseMult = 1-(numInliers_arr[i]/MAX_CAM_CORNERS);
+      if(camNoiseMult < 0.01) //Avoid zeros, if 1000 maxCorners this is 990 inliers.
+	camNoiseMult = 0.01;
+
+      cout << "Cam Noise multipler=" << camNoiseMult << endl;
+      double camNoiseTransl = camNoiseMult; //allInliers=>0.01 , noInliers=>1. transl is a unit vector
+      double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
+      noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, camNoiseTransl, ZERO_NOISE, camNoiseRot));
+      
+      /*NOTE: The 4th variance (Roll?) in the output is constant at the maximum, which seems to be the estimated input value for the first guess. The 5 values in the noise input vector seem to correspond to: 1-1, 2-2, 3-3, 4-5, 5-6 to the output covariance 6 item vector. This was determined by changing one input noise value at a time and looking at the resultant noise vector at the output. Seems to be a problem with the GTSAM code? So, for now, since we aren't using roll at all, just ignore it. BUT make sure to remember the correspondences - so set first three in the Noise(5) vector to translNoise and the last two to rotNoise. */
+      
       graph.add(EssentialMatrixConstraint(i, i+1, EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
     }
-  int n = i-1;
 
-  //graph.print("\nFactor Graph:\n"); // print
+    int n = i-1;
 
-  // Create the data structure to hold the initialEstimate estimate to the solution
-  // For illustrative purposes, these have been deliberately set to incorrect values
-  Values initial;
-  double addedErr = 0.1;
+    //graph.print("\nFactor Graph:\n"); // print
+
+    // Create the data structure to hold the initialEstimate estimate to the solution
+    // For illustrative purposes, these have been deliberately set to incorrect values
+    Values initial;
+    double addedErr = 0.1;
  
-  initial.insert(1, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+    initial.insert(1, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
 
   for(i=2; i<11; i++)
     {
@@ -383,7 +529,7 @@ int main(int argc, char** argv)
       
       // Calculate and print marginal covariances for all variables
       cout.precision(2); 
-      //      cout << "x" << i << " covariance:\n" << marginals.marginalCovariance(i) << endl;
+      //cout << "x" << i << " covariance:\n" << marginals.marginalCovariance(i) << endl;
       cout << "X" << i << " covariance: ";
       for(int i1=0;i1<6;i1++)
 	{
