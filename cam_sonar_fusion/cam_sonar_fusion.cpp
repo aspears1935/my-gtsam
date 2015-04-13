@@ -93,6 +93,7 @@ int main(int argc, char** argv)
   ifstream inFileSon(sonInputFileName);
   ifstream inFileCam(camInputFileName);
 
+
   string tmpstring;
 
   getline(inFileSon,tmpstring,';');
@@ -247,6 +248,10 @@ int main(int argc, char** argv)
       cout << "xson,yson,yawson=" << x_son_arr[i] << "," << y_son_arr[i] << "," << yaw_son_arr[i] << endl;
     }
 
+  //Write the column headings on the output file:
+  ofstream outfile("outputGTSAM.csv");
+  outfile << "frame/time?;x;y;z;roll;pitch;yaw;covx;covy;covz;covroll;covpitch;covyaw;" << endl; 
+
   // Create an empty nonlinear factor graph
   NonlinearFactorGraph graph;
 
@@ -348,33 +353,50 @@ int main(int argc, char** argv)
 
   // result.print("Final Result:\n");
 
+  Marginals marginals(graph, result);
+
   for(i=1;i<n+1;i++)
     {
       double xprint = result.at<Pose3>(i).x();
       double yprint = result.at<Pose3>(i).y();
+      double zprint = result.at<Pose3>(i).z();
+      double rollprint = result.at<Pose3>(i).rotation().roll();
+      double pitchprint = result.at<Pose3>(i).rotation().pitch();
       double yawprint = result.at<Pose3>(i).rotation().yaw();
 
       if(abs(xprint) < 0.001)
 	xprint = 0;
       if(abs(yprint) < 0.001)
 	yprint = 0;
+      if(abs(zprint) < 0.001)
+	zprint = 0;
+      if(abs(rollprint) < 0.001)
+	rollprint = 0;
+      if(abs(pitchprint) < 0.001)
+	pitchprint = 0;
       if(abs(yawprint) < 0.001)
 	yawprint = 0;
 
       cout << i << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
-    }
-
-  // Calculate and print marginal covariances for all variables
-  cout.precision(2);
-  Marginals marginals(graph, result);
-  for(i=1;i<n+1;i++)
-    {
-      cout << "x" << i << " covariance:\n" << marginals.marginalCovariance(i) << endl;
+      
+      outfile << i << ";" << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+      
+      // Calculate and print marginal covariances for all variables
+      cout.precision(2); 
+      //      cout << "x" << i << " covariance:\n" << marginals.marginalCovariance(i) << endl;
+      cout << "X" << i << " covariance: ";
+      for(int i1=0;i1<6;i1++)
+	{
+	  cout << marginals.marginalCovariance(i)(i1,i1) << ",";
+	  outfile << marginals.marginalCovariance(i)(i1,i1) << ";";
+	}
+      cout << endl;
+      outfile << endl;
     }
 
   cout << "Initial Estimate Error: " <<  graph.error(initial) << endl;
   cout << "Result Error: " << graph.error(result) << endl;
 
-
+  outfile.close();
   return 0;
 }
