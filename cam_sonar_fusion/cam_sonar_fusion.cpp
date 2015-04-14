@@ -463,7 +463,7 @@ int main(int argc, char** argv)
 
       noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << sonNoiseTransl, sonNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonNoiseRot));
       
-      graph.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
+      //      graph.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
       graphSonOnly.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
 
       initialSon.insert(t2son_arr[i], Pose3(Rot3::ypr(yaw_sum,0,0), Point3(x_sum,y_sum,0)));
@@ -504,10 +504,14 @@ int main(int argc, char** argv)
       double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
       noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, camNoiseTransl, ZERO_NOISE, camNoiseRot));
       noiseModel::Diagonal::shared_ptr cameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camNoiseTransl, camNoiseTransl, camNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
+
+      noiseModel::Diagonal::shared_ptr bigNoise6 = noiseModel::Diagonal::Variances((Vector(6) << 100,100,100,100,100,100));
       
       /*NOTE: The 4th variance (Roll?) in the output is constant at the maximum, which seems to be the estimated input value for the first guess. The 5 values in the noise input vector seem to correspond to: 1-1, 2-2, 3-3, 4-5, 5-6 to the output covariance 6 item vector. This was determined by changing one input noise value at a time and looking at the resultant noise vector at the output. Seems to be a problem with the GTSAM code? So, for now, since we aren't using roll at all, just ignore it. BUT make sure to remember the correspondences - so set first three in the Noise(5) vector to translNoise and the last two to rotNoise. */
       
       graph.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
+      graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise6)); //Have to add this or else underconstrained
+     
       graphCamOnly.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
       graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise6)); //Have to add this or else underconstrained
 
@@ -523,21 +527,32 @@ int main(int argc, char** argv)
       if(t2son_arr[iSon1] == iFuse) //If there is a sonar node here:
 	{
 	  cout << iFuse << endl;
-	  initial.insert(iFuse, Pose3(initialSon.at<Pose3>(iFuse)));
+	  initial.insert(iFuse, Pose3(Rot3::ypr(initialSon.at<Pose3>(iFuse).rotation().yaw(),initialSon.at<Pose3>(iFuse).rotation().pitch(),initialSon.at<Pose3>(iFuse).rotation().roll()), Point3(initialSon.at<Pose3>(iFuse).x(),initialSon.at<Pose3>(iFuse).y(),initialSon.at<Pose3>(iFuse).z())));
+	  //initial.insert(iFuse, initialSon.at<Pose3>(iFuse));
 	  iSon1++;
 	  if(t2cam_arr[iCam1] == iFuse) //If there is also a camera node here:
 	    iCam1++;
 	}
       else if(t2cam_arr[iCam1] == iFuse) //If there is a camera node, but no sonar node here, so use last sonar estimate again:
-	{
+	{ 
+	  //NOTE!!! MUST NOT BE EQUAL TO PREVIOUS NODE. CAUSES NAN TO BE OUTPUT FOR COVARIANCES. So, here I add a small amount to x. 
 	  cout << iFuse << " (camonly)"<< endl;
-	  initial.insert(iFuse, Pose3(initialSon.at<Pose3>(t2son_arr[iSon1-1])));
+	  initial.insert(iFuse, Pose3(Rot3::ypr(initialSon.at<Pose3>(t2son_arr[iSon1-1]).rotation().yaw(),initialSon.at<Pose3>(t2son_arr[iSon1-1]).rotation().pitch(),initialSon.at<Pose3>(t2son_arr[iSon1-1]).rotation().roll()), Point3(initialSon.at<Pose3>(t2son_arr[iSon1-1]).x()+0.001,initialSon.at<Pose3>(t2son_arr[iSon1-1]).y(),initialSon.at<Pose3>(t2son_arr[iSon1-1]).z())));
+	  //initial.insert(iFuse, initialSon.at<Pose3>(t2son_arr[iSon1-1]));
+
+	  //Also need to add in a pose factor for 5/6 vector issue if only cam 
+	  /*	  noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << 100, 100, 100, 100, 100, 100));
+		  graph.add(BetweenFactor<Pose3>(t1cam_arr[iCam1], t2cam_arr[iCam1], Pose3(Rot3::ypr(0,0,0), Point3(0,0,0)), sonarNoise));
+	  */
+
+	  //Increment:
 	  iCam1++;
 	}
       else
 	continue; //Neither cam nor son here. skip node.
     }
   /**************************************************************/
+  
 
   //    int n = i-1;
 
@@ -609,7 +624,6 @@ int main(int argc, char** argv)
   cout << 1 << " Cam Result: x,y,yaw = " << resultCamOnly.at<Pose3>(1).x() << "," << resultCamOnly.at<Pose3>(1).y() << "," << resultCamOnly.at<Pose3>(1).rotation().yaw() << endl;
   outfile << resultCamOnly.at<Pose3>(1).x() << ";" << resultCamOnly.at<Pose3>(1).y() << ";" << resultCamOnly.at<Pose3>(1).z() << ";" << resultCamOnly.at<Pose3>(1).rotation().roll() << ";" << resultCamOnly.at<Pose3>(1).rotation().pitch() << ";" << resultCamOnly.at<Pose3>(1).rotation().yaw() << ";";
   outfile << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << endl;
-
 
   int iSon = 0;
   int iCam = 0;
