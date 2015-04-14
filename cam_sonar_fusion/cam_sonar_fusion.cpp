@@ -360,10 +360,17 @@ int main(int argc, char** argv)
 
   //Write the column headings on the output file:
   ofstream outfile("outputGTSAM.csv");
-  outfile << "frame/time?;x;y;z;roll;pitch;yaw;covx;covy;covz;covroll;covpitch;covyaw;" << endl; 
+  outfile << "frame/time?;x;y;z;roll;pitch;yaw;";
+  outfile << "xson;yson;zson;rollson;pitchson;yawson;";
+  outfile << "xcam;ycam;zcam;rollcam;pitchcam;yawcam;";
+  outfile << "covx;covy;covz;covroll;covpitch;covyaw;";
+  outfile << "covxson;covyson;covzson;covrollson;covpitchson;covyawson;";
+  outfile << "covxcam;covycam;covzcam;covrollcam;covpitchcam;covyawcam;" << endl; 
 
   // Create an empty nonlinear factor graph
   NonlinearFactorGraph graph;
+  NonlinearFactorGraph graphSonOnly;
+  NonlinearFactorGraph graphCamOnly;
 
   Rot3 priorMeanRot3 = Rot3::ypr(yaw_arr[0], pitch_arr[0], roll_arr[0]);
 
@@ -390,6 +397,9 @@ int main(int argc, char** argv)
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
   graph.add(PriorFactor<Pose3>(1, priorMean, priorNoise));
+  graphSonOnly.add(PriorFactor<Pose3>(1, priorMean, priorNoise));
+  graphCamOnly.add(PriorFactor<Pose3>(1, priorMean, priorNoise));
+
 
   // Add odometry factors
   Pose3 odometry_0(Rot3::ypr(0,0,0), Point3(0,0,0));
@@ -411,7 +421,7 @@ int main(int argc, char** argv)
 
   /*********************** Add Sonar Nodes *************************/
   int i;
-  for(i = 1; i<10; i++)    
+  for(i = 1; i<lengthSon; i++)    
     {
       double sonNoiseMult;
       cout << "son corners,matches,inliers=" << numCorners_son_arr[i] << "," << numMatches_son_arr[i] << "," << numInliers_son_arr[i] << endl;
@@ -426,10 +436,11 @@ int main(int argc, char** argv)
       noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << sonNoiseTransl, sonNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonNoiseRot));
       
       graph.add(BetweenFactor<Pose3>(i, i+1, Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
+      graphSonOnly.add(BetweenFactor<Pose3>(i, i+1, Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
     }
 
   /*********************** Add Camera Nodes *************************/
-  for(i = 1; i<10; i++)
+  for(i = 1; i<lengthCam; i++)
     {
       double camNoiseMult;
       cout << "corners,matches,inliers=" << numCorners_arr[i] << "," << numMatches_arr[i] << "," << numInliers_arr[i] << endl;
@@ -450,10 +461,13 @@ int main(int argc, char** argv)
       double camNoiseTransl = camNoiseMult; //allInliers=>0.01 , noInliers=>1. transl is a unit vector
       double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
       noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, camNoiseTransl, ZERO_NOISE, camNoiseRot));
+      noiseModel::Diagonal::shared_ptr cameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camNoiseTransl, camNoiseTransl, camNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
       
       /*NOTE: The 4th variance (Roll?) in the output is constant at the maximum, which seems to be the estimated input value for the first guess. The 5 values in the noise input vector seem to correspond to: 1-1, 2-2, 3-3, 4-5, 5-6 to the output covariance 6 item vector. This was determined by changing one input noise value at a time and looking at the resultant noise vector at the output. Seems to be a problem with the GTSAM code? So, for now, since we aren't using roll at all, just ignore it. BUT make sure to remember the correspondences - so set first three in the Noise(5) vector to translNoise and the last two to rotNoise. */
       
       graph.add(EssentialMatrixConstraint(i, i+1, EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
+      graphCamOnly.add(EssentialMatrixConstraint(i, i+1, EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
+      graphCamOnly.add(BetweenFactor<Pose3>(i, i+1, Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise6)); //Have to add this or else underconstrained
     }
 
     int n = i-1;
@@ -467,7 +481,7 @@ int main(int argc, char** argv)
  
     initial.insert(1, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
 
-  for(i=2; i<11; i++)
+    for(i=2; i<max(lengthSon,lengthCam)+1; i++) 
     {
       initial.insert(i, Pose3(Rot3::ypr(0,0,0), Point3(i-1+addedErr,addedErr,addedErr)));
     }
@@ -478,7 +492,7 @@ int main(int argc, char** argv)
   //  initial.print("\nInitial Estimate:\n"); // print
 
   //AMS Custom Print:
-  for(i=1;i<n+1;i++)
+  for(i=1;i<max(lengthSon,lengthCam)+1;i++) 
     {
       double xprint = initial.at<Pose3>(i).x();
       double yprint = initial.at<Pose3>(i).y();
@@ -496,12 +510,16 @@ int main(int argc, char** argv)
 
   // optimize using Levenberg-Marquardt optimization
   Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+  Values resultSonOnly = LevenbergMarquardtOptimizer(graphSonOnly, initial).optimize();
+  Values resultCamOnly = LevenbergMarquardtOptimizer(graphCamOnly, initial).optimize();
 
   // result.print("Final Result:\n");
 
   Marginals marginals(graph, result);
+  Marginals marginalsSonOnly(graphSonOnly, resultSonOnly);
+  Marginals marginalsCamOnly(graphCamOnly, resultCamOnly);
 
-  for(i=1;i<n+1;i++)
+  for(i=1;i<max(lengthSon,lengthCam)+1;i++) //was n+1
     {
       double xprint = result.at<Pose3>(i).x();
       double yprint = result.at<Pose3>(i).y();
@@ -526,6 +544,56 @@ int main(int argc, char** argv)
       cout << i << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
       
       outfile << i << ";" << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+
+      //-------------SonOnly-------------//
+      xprint = resultSonOnly.at<Pose3>(i).x();
+      yprint = resultSonOnly.at<Pose3>(i).y();
+      zprint = resultSonOnly.at<Pose3>(i).z();
+      rollprint = resultSonOnly.at<Pose3>(i).rotation().roll();
+      pitchprint = resultSonOnly.at<Pose3>(i).rotation().pitch();
+      yawprint = resultSonOnly.at<Pose3>(i).rotation().yaw();
+
+      if(abs(xprint) < 0.001)
+	xprint = 0;
+      if(abs(yprint) < 0.001)
+	yprint = 0;
+      if(abs(zprint) < 0.001)
+	zprint = 0;
+      if(abs(rollprint) < 0.001)
+	rollprint = 0;
+      if(abs(pitchprint) < 0.001)
+	pitchprint = 0;
+      if(abs(yawprint) < 0.001)
+	yawprint = 0;
+
+      cout << i << " Sonar Only Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
+      
+      outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+
+      //-------------CamOnly----------------//
+      xprint = resultCamOnly.at<Pose3>(i).x();
+      yprint = resultCamOnly.at<Pose3>(i).y();
+      zprint = resultCamOnly.at<Pose3>(i).z();
+      rollprint = resultCamOnly.at<Pose3>(i).rotation().roll();
+      pitchprint = resultCamOnly.at<Pose3>(i).rotation().pitch();
+      yawprint = resultCamOnly.at<Pose3>(i).rotation().yaw();
+
+      if(abs(xprint) < 0.001)
+	xprint = 0;
+      if(abs(yprint) < 0.001)
+	yprint = 0;
+      if(abs(zprint) < 0.001)
+	zprint = 0;
+      if(abs(rollprint) < 0.001)
+	rollprint = 0;
+      if(abs(pitchprint) < 0.001)
+	pitchprint = 0;
+      if(abs(yawprint) < 0.001)
+	yawprint = 0;
+
+      cout << i << " Cam Only Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
+      
+      outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
       
       // Calculate and print marginal covariances for all variables
       cout.precision(2); 
@@ -537,11 +605,37 @@ int main(int argc, char** argv)
 	  outfile << marginals.marginalCovariance(i)(i1,i1) << ";";
 	}
       cout << endl;
+
+      //------------SonOnly--------------//
+      cout << "X" << i << " Son covariance: ";
+      for(int i1=0;i1<6;i1++)
+	{
+	  cout << marginalsSonOnly.marginalCovariance(i)(i1,i1) << ",";
+	  outfile << marginalsSonOnly.marginalCovariance(i)(i1,i1) << ";";
+	}
+      cout << endl;
+
+      //------------VidOnly------------//
+      cout << "X" << i << " Cam covariance: ";
+      for(int i1=0;i1<6;i1++)
+	{
+	  cout << marginalsCamOnly.marginalCovariance(i)(i1,i1) << ",";
+	  outfile << marginalsCamOnly.marginalCovariance(i)(i1,i1) << ";";
+	}
+      cout << endl;
       outfile << endl;
     }
 
   cout << "Initial Estimate Error: " <<  graph.error(initial) << endl;
   cout << "Result Error: " << graph.error(result) << endl;
+
+  //--------------------- Son Only -----------------------//
+  cout << "Initial Estimate Error: " <<  graphSonOnly.error(initial) << endl;
+  cout << "Result Error: " << graphSonOnly.error(resultSonOnly) << endl;
+
+  //--------------------- Cam Only -----------------------//
+  cout << "Initial Estimate Error: " <<  graphCamOnly.error(initial) << endl;
+  cout << "Result Error: " << graphCamOnly.error(resultCamOnly) << endl;
 
   outfile.close();
   return 0;
