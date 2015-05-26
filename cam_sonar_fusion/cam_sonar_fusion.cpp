@@ -303,9 +303,10 @@ int main(int argc, char** argv)
     {
       //Sonar Data:
       getline(inFileSon,tmpstring,';');
-      t1son_arr[i] = (float)(atof(tmpstring.c_str()));
+      t1son_arr[i] = 10*(float)(atof(tmpstring.c_str()));
       getline(inFileSon,tmpstring,';');
-      t2son_arr[i] = (float)(atof(tmpstring.c_str()));
+      t2son_arr[i] = 10*(float)(atof(tmpstring.c_str()));
+      cout << "son t1,t2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
 
       getline(inFileSon,tmpstring,';');
       x_son_arr[i] = (float)(atof(tmpstring.c_str()));
@@ -325,9 +326,10 @@ int main(int argc, char** argv)
     {
       //Camera Data:
       getline(inFileCam,tmpstring,';');
-      t1cam_arr[i] = (float)(atof(tmpstring.c_str()));
+      t1cam_arr[i] = 10*(float)(atof(tmpstring.c_str()));
       getline(inFileCam,tmpstring,';');
-      t2cam_arr[i] = (float)(atof(tmpstring.c_str()));
+      t2cam_arr[i] = 10*(float)(atof(tmpstring.c_str()));
+      cout << "cam t1,t2 = " << t1cam_arr[i] << "," << t2cam_arr[i] << endl;
 
       getline(inFileCam,tmpstring,';');
       xunit_arr[i] = (float)(atof(tmpstring.c_str()));
@@ -336,12 +338,13 @@ int main(int argc, char** argv)
       getline(inFileCam,tmpstring,';');
       zunit_arr[i] = (float)(atof(tmpstring.c_str()));
     
+      //Convert from degrees to radians:
       getline(inFileCam,tmpstring,';');
-      roll_arr[i] = (float)(atof(tmpstring.c_str()));
+      roll_arr[i] = (float)(atof(tmpstring.c_str()))*PI/180;
       getline(inFileCam,tmpstring,';');
-      pitch_arr[i] = (float)(atof(tmpstring.c_str()));
+      pitch_arr[i] = (float)(atof(tmpstring.c_str()))*PI/180;
       getline(inFileCam,tmpstring,';');
-      yaw_arr[i] = (float)(atof(tmpstring.c_str()));
+      yaw_arr[i] = (float)(atof(tmpstring.c_str()))*PI/180;
 
       getline(inFileCam,tmpstring,';');
       numCorners_arr[i] = (float)(atof(tmpstring.c_str()));
@@ -388,19 +391,22 @@ int main(int argc, char** argv)
   NonlinearFactorGraph graphSonOnly;
   NonlinearFactorGraph graphCamOnly;
 
-  Rot3 priorMeanRot3 = Rot3::ypr(yaw_arr[0], pitch_arr[0], roll_arr[0]);
+  /*Rot3 priorMeanRot3 = Rot3::ypr(0,0,0);
+  //  Rot3 priorMeanRot3 = Rot3::ypr(yaw_arr[0], pitch_arr[0], roll_arr[0]);
+  //  Rot3 priorMeanRot3 = Rot3::ypr(PI/3, PI/2, PI); //RADIANS!
 
   cout << "Prior Rot Matrix:" << endl;
   priorMeanRot3.print();
 
   Vector3 current_ypr;
   current_ypr = priorMeanRot3.ypr();
-  cout << "Prior Yaw = " << current_ypr[0] << endl;
-  cout << "Prior Pitch = " << current_ypr[1] << endl;
-  cout << "Prior Roll = " << current_ypr[2] << endl;
-  
+  cout << "Prior Yaw = " << current_ypr[0]*180/PI << endl;
+  cout << "Prior Pitch = " << current_ypr[1]*180/PI << endl;
+  cout << "Prior Roll = " << current_ypr[2]*180/PI << endl;
+
   Point3 priorMeanPoint3(0,0,0);
   priorMeanPoint3.print("Prior 3D Point = ");
+  */
 
   //  Pose3 priorMean(priorMeanRot3,priorMeanPoint3);
   Pose3 priorMean(Rot3::ypr(0,0,0), Point3(0,0,0));
@@ -412,18 +418,18 @@ int main(int argc, char** argv)
   //  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1));
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Variances((Vector(6) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
-  graph.add(PriorFactor<Pose3>(1, priorMean, priorNoise));
-  graphSonOnly.add(PriorFactor<Pose3>(1, priorMean, priorNoise));
-  graphCamOnly.add(PriorFactor<Pose3>(1, priorMean, priorNoise));
+  graph.add(PriorFactor<Pose3>(0, priorMean, priorNoise));
+  graphSonOnly.add(PriorFactor<Pose3>(0, priorMean, priorNoise));
+  graphCamOnly.add(PriorFactor<Pose3>(0, priorMean, priorNoise));
 
   Values initial;
   Values initialSon;
   Values initialCam;
   double addedErr = 0;
   
-  initial.insert(1, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
-  initialSon.insert(1, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
-  initialCam.insert(1, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+  initial.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+  initialSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+  initialCam.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
 
   // Add odometry factors
   //Pose3 odometry_0(Rot3::ypr(0,0,0), Point3(0,0,0));
@@ -452,12 +458,14 @@ int main(int argc, char** argv)
       yaw_sum += yaw_son_arr[i];
 
       double sonNoiseMult;
-      cout << "son corners,matches,inliers=" << numCorners_son_arr[i] << "," << numMatches_son_arr[i] << "," << numInliers_son_arr[i] << endl;
+      if(VERBOSE)
+	cout << "son corners,matches,inliers=" << numCorners_son_arr[i] << "," << numMatches_son_arr[i] << "," << numInliers_son_arr[i] << endl;
       sonNoiseMult = 1-(numInliers_son_arr[i]/MAX_SON_CORNERS);
       if(sonNoiseMult < 0.01) //Avoid zeros, if 1000 maxCorners this is 990 inliers.
 	sonNoiseMult = 0.01;
       
-      cout << "Son Noise multipler=" << sonNoiseMult << endl;
+      if(VERBOSE)
+	cout << "Son Noise multipler=" << sonNoiseMult << endl;
       double sonNoiseTransl = 10*sonNoiseMult; //allInliers=>0.1m, noInliers=>10m
       double sonNoiseRot = 10*sonNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
 
@@ -468,7 +476,13 @@ int main(int argc, char** argv)
 
       initialSon.insert(t2son_arr[i], Pose3(Rot3::ypr(yaw_sum,0,0), Point3(x_sum,y_sum,0)));
 
+      if(VERBOSE)
+	{
+	  cout << "sonar sum: " << x_sum << "," << y_sum << "," << yaw_sum << endl;
+	}
+
     }
+
   x_sum = 0;
   y_sum = 0;
   yaw_sum = 0;
@@ -484,7 +498,8 @@ int main(int argc, char** argv)
       yaw_sum += yaw_arr[i];
 
       double camNoiseMult;
-      cout << "corners,matches,inliers=" << numCorners_arr[i] << "," << numMatches_arr[i] << "," << numInliers_arr[i] << endl;
+      if(VERBOSE)
+	cout << "corners,matches,inliers=" << numCorners_arr[i] << "," << numMatches_arr[i] << "," << numInliers_arr[i] << endl;
       //DEBUG: USE MATCHES, CORNERS, and INLIERS for Noise calculation:
       /*if(numInliers_arr[i] != 0)
 	camNoiseMult = (CAM_MATCHES_WEIGHT*(numCorners_arr[i]/numMatches_arr[i]))+(CAM_INLIERS_WEIGHT*(numMatches_arr[i]/numInliers_arr[i]))+(CAM_CORNERS_WEIGHT*(MAX_CAM_CORNERS/numCorners_arr[i])); //Inversly related to matches/corners, inliers/matches, and corners. This reduces to just 1/numInliers?. 
@@ -498,7 +513,8 @@ int main(int argc, char** argv)
       if(camNoiseMult < 0.01) //Avoid zeros, if 1000 maxCorners this is 990 inliers.
 	camNoiseMult = 0.01;
 
-      cout << "Cam Noise multipler=" << camNoiseMult << endl;
+      if(VERBOSE)
+	cout << "Cam Noise multipler=" << camNoiseMult << endl;
       double camNoiseTransl = camNoiseMult; //allInliers=>0.01 , noInliers=>1. transl is a unit vector
       double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
       noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, camNoiseTransl, ZERO_NOISE, camNoiseRot));
@@ -603,6 +619,7 @@ int main(int argc, char** argv)
 	continue;
     }
 
+  //  graph.print();
   // optimize using Levenberg-Marquardt optimization
   Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
   cout << "Optimized Fusion Graph" << endl;
@@ -614,15 +631,19 @@ int main(int argc, char** argv)
   // result.print("Final Result:\n");
 
   Marginals marginals(graph, result);
+  cout << "Calculated Fusion Marginals" << endl;
   Marginals marginalsSonOnly(graphSonOnly, resultSonOnly);
+  cout << "Calculated Sonar Marginals" << endl;
   Marginals marginalsCamOnly(graphCamOnly, resultCamOnly);
+  cout << "Calculated Camera Marginals" << endl;
 
-  cout << 1 << " Result: x,y,yaw = " << result.at<Pose3>(1).x() << "," << result.at<Pose3>(1).y() << "," << result.at<Pose3>(1).rotation().yaw() << endl;
-  outfile << 1 << ";" << result.at<Pose3>(1).x() << ";" << result.at<Pose3>(1).y() << ";" << result.at<Pose3>(1).z() << ";" << result.at<Pose3>(1).rotation().roll() << ";" << result.at<Pose3>(1).rotation().pitch() << ";" << result.at<Pose3>(1).rotation().yaw() << ";";
-  cout << 1 << " Son Result: x,y,yaw = " << resultSonOnly.at<Pose3>(1).x() << "," << resultSonOnly.at<Pose3>(1).y() << "," << resultSonOnly.at<Pose3>(1).rotation().yaw() << endl;
-  outfile << resultSonOnly.at<Pose3>(1).x() << ";" << resultSonOnly.at<Pose3>(1).y() << ";" << resultSonOnly.at<Pose3>(1).z() << ";" << resultSonOnly.at<Pose3>(1).rotation().roll() << ";" << resultSonOnly.at<Pose3>(1).rotation().pitch() << ";" << resultSonOnly.at<Pose3>(1).rotation().yaw() << ";";
-  cout << 1 << " Cam Result: x,y,yaw = " << resultCamOnly.at<Pose3>(1).x() << "," << resultCamOnly.at<Pose3>(1).y() << "," << resultCamOnly.at<Pose3>(1).rotation().yaw() << endl;
-  outfile << resultCamOnly.at<Pose3>(1).x() << ";" << resultCamOnly.at<Pose3>(1).y() << ";" << resultCamOnly.at<Pose3>(1).z() << ";" << resultCamOnly.at<Pose3>(1).rotation().roll() << ";" << resultCamOnly.at<Pose3>(1).rotation().pitch() << ";" << resultCamOnly.at<Pose3>(1).rotation().yaw() << ";";
+
+  cout << 0 << " Result: x,y,yaw = " << result.at<Pose3>(0).x() << "," << result.at<Pose3>(0).y() << "," << result.at<Pose3>(0).rotation().yaw() << endl;
+  outfile << 0 << ";" << result.at<Pose3>(0).x() << ";" << result.at<Pose3>(0).y() << ";" << result.at<Pose3>(0).z() << ";" << result.at<Pose3>(0).rotation().roll() << ";" << result.at<Pose3>(0).rotation().pitch() << ";" << result.at<Pose3>(0).rotation().yaw() << ";";
+  cout << 0 << " Son Result: x,y,yaw = " << resultSonOnly.at<Pose3>(0).x() << "," << resultSonOnly.at<Pose3>(0).y() << "," << resultSonOnly.at<Pose3>(0).rotation().yaw() << endl;
+  outfile << resultSonOnly.at<Pose3>(0).x() << ";" << resultSonOnly.at<Pose3>(0).y() << ";" << resultSonOnly.at<Pose3>(0).z() << ";" << resultSonOnly.at<Pose3>(0).rotation().roll() << ";" << resultSonOnly.at<Pose3>(0).rotation().pitch() << ";" << resultSonOnly.at<Pose3>(0).rotation().yaw() << ";";
+  cout << 0 << " Cam Result: x,y,yaw = " << resultCamOnly.at<Pose3>(0).x() << "," << resultCamOnly.at<Pose3>(0).y() << "," << resultCamOnly.at<Pose3>(0).rotation().yaw() << endl;
+  outfile << resultCamOnly.at<Pose3>(0).x() << ";" << resultCamOnly.at<Pose3>(0).y() << ";" << resultCamOnly.at<Pose3>(0).z() << ";" << resultCamOnly.at<Pose3>(0).rotation().roll() << ";" << resultCamOnly.at<Pose3>(0).rotation().pitch() << ";" << resultCamOnly.at<Pose3>(0).rotation().yaw() << ";";
   outfile << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << endl;
 
   int iSon = 0;
