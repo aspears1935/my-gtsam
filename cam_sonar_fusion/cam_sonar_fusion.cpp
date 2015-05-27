@@ -1,7 +1,7 @@
 //TODO: need to change size of x,y,z, arrays to actual size of frames from 256.
 //Need to change the initial estimate array from length to max node because might skip some nodes
 //Need to fix yaw marginal covariance growing unbounded. Might just have to not use yaw for examples
-//Fix camera noise model constant - right now all ZERO_NOISE
+//Need to figure out noise model - this one weights sonar heavily so output looks just like sonar. Should also consider that sonar doesn't have all 1000 detected points - might consider having max_detected_points or matches/detected points as a metric in the calculation of noise.
 
 /* ----------------------------------------------------------------------------
 
@@ -80,8 +80,8 @@ using namespace gtsam;
 #define CAM_CORNERS_WEIGHT 0.3333333
 #define CAM_MATCHES_WEIGHT 0.3333333
 #define CAM_INLIERS_WEIGHT 0.3333333
-#define MAX_CAM_CORNERS 100 //Should most likely be 1000
-#define MAX_SON_CORNERS 100 //Should most likely be 1000
+#define MAX_CAM_CORNERS 1000 //Should most likely be 1000
+#define MAX_SON_CORNERS 1000 //Should most likely be 1000
 #define ZERO_NOISE 0.00001
 
 int main(int argc, char** argv) 
@@ -438,11 +438,16 @@ int main(int argc, char** argv)
   Values initial;
   Values initialSon;
   Values initialCam;
-  double addedErr = 0;
-  
+
+  //NOTE: addedErr - This is confusing. When both before and after prior addedErr is 7 or less, it has no effect - all the same. When 8 before and after, it begins to change the output. When it is 10, it changes a lot. When 150, doesn't change at all and back to no effect like 0. This is for the simulated data input rectangle200x100 and the sonar only data (the fused data performs differently).
+  double addedErr = 0; //Debug: should be 0
+   
   initial.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
   initialSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
   initialCam.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+
+  //Note: changed just this and didn't effect output of sonar results 0-10
+  //addedErr = 0; //Debug: should be 0
 
   // Add odometry factors
   //Pose3 odometry_0(Rot3::ypr(0,0,0), Point3(0,0,0));
@@ -482,9 +487,12 @@ int main(int argc, char** argv)
       
       if(VERBOSE)
 	cout << "Son Noise multipler=" << sonNoiseMult << endl;
-      double sonNoiseTransl = 10*sonNoiseMult; //allInliers=>0.1m, noInliers=>10m
-      double sonNoiseRot = 10*sonNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
+      double sonNoiseTransl = 0.01*sonNoiseMult; //allInliers=>0.0001m, noInliers=>0.01m
+      //double sonNoiseTransl = 10*sonNoiseMult; //allInliers=>0.1m, noInliers=>10m
+      double sonNoiseRot = 0.001*sonNoiseMult; //allInliers=>0.00001rad, noInliers=>0.001 deg
+      //double sonNoiseRot = 10*sonNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
 
+      cout << "Son Noise: " << sonNoiseTransl << "," << sonNoiseRot << endl;
       noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << sonNoiseTransl, sonNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonNoiseRot));
 
       //NOTE: If make sonar noise 0.1, causes indeterminate solution! 
@@ -492,9 +500,9 @@ int main(int argc, char** argv)
       noiseModel::Diagonal::shared_ptr constSonarNoise = noiseModel::Diagonal::Variances((Vector(6) << 0.01, 0.01, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
       
       graph.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
-      graphSonOnly.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), constSonarNoise));
+      graphSonOnly.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
 
-      initialSon.insert(t2son_arr[i], Pose3(Rot3::ypr(yaw_sum_son,0,0), Point3(x_sum_son,y_sum_son,0)));
+      initialSon.insert(t2son_arr[i], Pose3(Rot3::ypr(yaw_sum_son+addedErr,0,0), Point3(x_sum_son+addedErr,y_sum_son+addedErr,0)));
 
       if(VERBOSE)
 	{
@@ -503,8 +511,8 @@ int main(int argc, char** argv)
 
     }
 
-  graphSonOnly.print();
-  initialSon.print();
+  //  graphSonOnly.print();
+  //  initialSon.print();
 
   /*********************** Add Camera Nodes *************************/
   x_sum_cam=0;
@@ -541,15 +549,18 @@ int main(int argc, char** argv)
 
       if(VERBOSE)
 	cout << "Cam Noise multipler=" << camNoiseMult << endl;
-      double camNoiseTransl = camNoiseMult; //allInliers=>0.01 , noInliers=>1. transl is a unit vector
-      double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
-      noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, camNoiseTransl, ZERO_NOISE, camNoiseRot));
+      //double camNoiseTransl = camNoiseMult; //allInliers=>0.01 , noInliers=>1. transl is a unit vector
+      //      double camNoiseTransl = 10*camNoiseMult; //allInliers=>0.1 , noInliers=>10. transl is a unit vector
+      double camNoiseTransl = 0.01*camNoiseMult; //allInliers=>0.0001 , noInliers=>0.01. transl is a unit vector
+      double camNoiseRot = 0.001*camNoiseMult; //allInliers=>0.00001deg, noInliers=>0.001 deg
+      //double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
+      noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, camNoiseTransl, camNoiseRot, camNoiseRot)); //4th (2nd from last) was ZERO_NOISE but changed.??
 
-      noiseModel::Diagonal::shared_ptr constCameraNoise = noiseModel::Diagonal::Variances((Vector(5) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
+      noiseModel::Diagonal::shared_ptr constCameraNoise = noiseModel::Diagonal::Variances((Vector(5) << 0.1, 0.1, 0.1, 0.1, 0.1));//ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
       noiseModel::Diagonal::shared_ptr cameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camNoiseTransl, camNoiseTransl, camNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
 
-      noiseModel::Diagonal::shared_ptr constCameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
+      noiseModel::Diagonal::shared_ptr constCameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)); //ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
       noiseModel::Diagonal::shared_ptr bigNoise6 = noiseModel::Diagonal::Variances((Vector(6) << 10000,10000,10000,10000,10000,10000));
       
@@ -559,10 +570,10 @@ int main(int argc, char** argv)
       graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), bigNoise6)); //Have to add this or else underconstrained if no sonar. Doesn't seem to have much effect - GOOD!.
       //graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(0,0,0), Point3(1,1,1)), bigNoise6)); //Have to add this or else underconstrained if no sonar. Doesn't seem to have much effect - GOOD!. Here, just add random vector because the large noise will essential weight it to zero.
      
-      graphCamOnly.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), constCameraNoise));
-      graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), constCameraNoise6)); //Have to add this or else underconstrained
+      graphCamOnly.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
+      graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise6)); //Have to add this or else underconstrained
 
-      initialCam.insert(t2cam_arr[i], Pose3(Rot3::ypr(yaw_sum_cam,pitch_sum_cam,roll_sum_cam), Point3(x_sum_cam,y_sum_cam,z_sum_cam)));
+      initialCam.insert(t2cam_arr[i], Pose3(Rot3::ypr(yaw_sum_cam+addedErr,pitch_sum_cam+addedErr,roll_sum_cam+addedErr), Point3(x_sum_cam+addedErr,y_sum_cam+addedErr,z_sum_cam+addedErr)));
 
     }
 
@@ -574,7 +585,7 @@ int main(int argc, char** argv)
     {
       if(t2son_arr[iSon1] == iFuse) //If there is a sonar node here:
 	{
-	  cout << iFuse << endl;
+	  cout << iFuse << "(sonar node)" << endl;
 	  initial.insert(iFuse, Pose3(Rot3::ypr(initialSon.at<Pose3>(iFuse).rotation().yaw(),initialSon.at<Pose3>(iFuse).rotation().pitch(),initialSon.at<Pose3>(iFuse).rotation().roll()), Point3(initialSon.at<Pose3>(iFuse).x(),initialSon.at<Pose3>(iFuse).y(),initialSon.at<Pose3>(iFuse).z())));
 	  //initial.insert(iFuse, initialSon.at<Pose3>(iFuse));
 	  iSon1++;
@@ -675,8 +686,10 @@ int main(int argc, char** argv)
   outfile << 0 << ";" << result.at<Pose3>(0).x() << ";" << result.at<Pose3>(0).y() << ";" << result.at<Pose3>(0).z() << ";" << result.at<Pose3>(0).rotation().roll() << ";" << result.at<Pose3>(0).rotation().pitch() << ";" << result.at<Pose3>(0).rotation().yaw() << ";";
   cout << 0 << " Son Result: x,y,yaw = " << resultSonOnly.at<Pose3>(0).x() << "," << resultSonOnly.at<Pose3>(0).y() << "," << resultSonOnly.at<Pose3>(0).rotation().yaw() << endl;
   outfile << resultSonOnly.at<Pose3>(0).x() << ";" << resultSonOnly.at<Pose3>(0).y() << ";" << resultSonOnly.at<Pose3>(0).z() << ";" << resultSonOnly.at<Pose3>(0).rotation().roll() << ";" << resultSonOnly.at<Pose3>(0).rotation().pitch() << ";" << resultSonOnly.at<Pose3>(0).rotation().yaw() << ";";
+  outfile << initialSon.at<Pose3>(0).x() << ";" << initialSon.at<Pose3>(0).y() << ";" << initialSon.at<Pose3>(0).z() << ";" << initialSon.at<Pose3>(0).rotation().roll() << ";" << initialSon.at<Pose3>(0).rotation().pitch() << ";" << initialSon.at<Pose3>(0).rotation().yaw() << ";";
   cout << 0 << " Cam Result: x,y,yaw = " << resultCamOnly.at<Pose3>(0).x() << "," << resultCamOnly.at<Pose3>(0).y() << "," << resultCamOnly.at<Pose3>(0).rotation().yaw() << endl;
   outfile << resultCamOnly.at<Pose3>(0).x() << ";" << resultCamOnly.at<Pose3>(0).y() << ";" << resultCamOnly.at<Pose3>(0).z() << ";" << resultCamOnly.at<Pose3>(0).rotation().roll() << ";" << resultCamOnly.at<Pose3>(0).rotation().pitch() << ";" << resultCamOnly.at<Pose3>(0).rotation().yaw() << ";";
+  outfile << initialCam.at<Pose3>(0).x() << ";" << initialCam.at<Pose3>(0).y() << ";" << initialCam.at<Pose3>(0).z() << ";" << initialCam.at<Pose3>(0).rotation().roll() << ";" << initialCam.at<Pose3>(0).rotation().pitch() << ";" << initialCam.at<Pose3>(0).rotation().yaw() << ";";
   outfile << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << endl;
 
   int iSon = 0;
@@ -892,16 +905,16 @@ int main(int argc, char** argv)
     }
   while((!doneSon)||(!doneCam)); //do while not finished with BOTH files
     
-  cout << "Initial Estimate Error: " <<  graph.error(initial) << endl;
-  cout << "Result Error: " << graph.error(result) << endl;
+  cout << "Initial Estimate Error (Fused): " <<  graph.error(initial) << endl;
+  cout << "Result Error (Fused): " << graph.error(result) << endl;
 
   //--------------------- Son Only -----------------------//
-  cout << "Initial Estimate Error: " <<  graphSonOnly.error(initial) << endl;
-  cout << "Result Error: " << graphSonOnly.error(resultSonOnly) << endl;
+  cout << "Initial Estimate Error (Sonar): " <<  graphSonOnly.error(initial) << endl;
+  cout << "Result Error (Sonar): " << graphSonOnly.error(resultSonOnly) << endl;
 
   //--------------------- Cam Only -----------------------//
-  cout << "Initial Estimate Error: " <<  graphCamOnly.error(initial) << endl;
-  cout << "Result Error: " << graphCamOnly.error(resultCamOnly) << endl;
+  cout << "Initial Estimate Error (Camera): " <<  graphCamOnly.error(initial) << endl;
+  cout << "Result Error (Camera): " << graphCamOnly.error(resultCamOnly) << endl;
 
   outfile.close();
   return 0;
