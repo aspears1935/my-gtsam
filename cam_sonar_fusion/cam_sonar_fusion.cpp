@@ -1,5 +1,7 @@
 //TODO: need to change size of x,y,z, arrays to actual size of frames from 256.
 //Need to change the initial estimate array from length to max node because might skip some nodes
+//Need to fix yaw marginal covariance growing unbounded. Might just have to not use yaw for examples
+//Fix camera noise model constant - right now all ZERO_NOISE
 
 /* ----------------------------------------------------------------------------
 
@@ -87,12 +89,20 @@ int main(int argc, char** argv)
   char sonInputFileName[256];
   char camInputFileName[256];
 
-  double x_sum = 0;
-  double y_sum = 0;
-  double z_sum = 0;
-  double roll_sum = 0;
-  double pitch_sum = 0;
-  double yaw_sum = 0;
+  double x_sum_cam = 0;
+  double y_sum_cam = 0;
+  double z_sum_cam = 0;
+  double roll_sum_cam = 0;
+  double pitch_sum_cam = 0;
+  double yaw_sum_cam = 0;
+
+  double x_sum_son = 0;
+  double y_sum_son = 0;
+  double z_sum_son = 0;
+  double roll_sum_son = 0;
+  double pitch_sum_son = 0;
+  double yaw_sum_son = 0;
+
   int firstSonNode, firstCamNode, lastSonNode, lastCamNode;
 
   if(argc < 2)
@@ -381,10 +391,13 @@ int main(int argc, char** argv)
   ofstream outfile("outputGTSAM.csv");
   outfile << "frame/time?;x;y;z;roll;pitch;yaw;";
   outfile << "xson;yson;zson;rollson;pitchson;yawson;";
+  outfile << "xsonSum;ysonSum;zsonSum;rollsonSum;pitchsonSum;yawsonSum;";
   outfile << "xcam;ycam;zcam;rollcam;pitchcam;yawcam;";
+  outfile << "xcamSum;ycamSum;zcamSum;rollcamSum;pitchcamSum;yawcamSum;";
   outfile << "covx;covy;covz;covroll;covpitch;covyaw;";
   outfile << "covxson;covyson;covzson;covrollson;covpitchson;covyawson;";
   outfile << "covxcam;covycam;covzcam;covrollcam;covpitchcam;covyawcam;" << endl; 
+
 
   // Create an empty nonlinear factor graph
   NonlinearFactorGraph graph;
@@ -451,11 +464,14 @@ int main(int argc, char** argv)
 
   /*********************** Add Sonar Nodes *************************/
   int i;
+  x_sum_son = 0;
+  y_sum_son = 0;
+  yaw_sum_son = 0;
   for(i = 0; i<lengthSon; i++)    
     {
-      x_sum += x_son_arr[i];
-      y_sum += y_son_arr[i];
-      yaw_sum += yaw_son_arr[i];
+      x_sum_son += x_son_arr[i];
+      y_sum_son += y_son_arr[i];
+      yaw_sum_son += yaw_son_arr[i];
 
       double sonNoiseMult;
       if(VERBOSE)
@@ -470,32 +486,42 @@ int main(int argc, char** argv)
       double sonNoiseRot = 10*sonNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
 
       noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << sonNoiseTransl, sonNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonNoiseRot));
+
+      //NOTE: If make sonar noise 0.1, causes indeterminate solution! 
+      //...Problem with yaw growing unbounded. For now, set to ZERO_NOISE!!! 
+      noiseModel::Diagonal::shared_ptr constSonarNoise = noiseModel::Diagonal::Variances((Vector(6) << 0.01, 0.01, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
       
       graph.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
-      graphSonOnly.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
+      graphSonOnly.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), constSonarNoise));
 
-      initialSon.insert(t2son_arr[i], Pose3(Rot3::ypr(yaw_sum,0,0), Point3(x_sum,y_sum,0)));
+      initialSon.insert(t2son_arr[i], Pose3(Rot3::ypr(yaw_sum_son,0,0), Point3(x_sum_son,y_sum_son,0)));
 
       if(VERBOSE)
 	{
-	  cout << "sonar sum: " << x_sum << "," << y_sum << "," << yaw_sum << endl;
+	  cout << "sonar sum: " << x_sum_son << "," << y_sum_son << "," << yaw_sum_son << endl;
 	}
 
     }
 
-  x_sum = 0;
-  y_sum = 0;
-  yaw_sum = 0;
+  graphSonOnly.print();
+  initialSon.print();
 
   /*********************** Add Camera Nodes *************************/
+  x_sum_cam=0;
+  y_sum_cam=0;
+  z_sum_cam=0;
+  roll_sum_cam=0;
+  pitch_sum_cam=0;
+  yaw_sum_cam=0;
+
   for(i = 0; i<lengthCam; i++)
     {
-      x_sum += xunit_arr[i];
-      y_sum += yunit_arr[i];
-      z_sum += zunit_arr[i];
-      roll_sum += roll_arr[i];
-      pitch_sum += pitch_arr[i];
-      yaw_sum += yaw_arr[i];
+      x_sum_cam += xunit_arr[i];
+      y_sum_cam += yunit_arr[i];
+      z_sum_cam += zunit_arr[i];
+      roll_sum_cam += roll_arr[i];
+      pitch_sum_cam += pitch_arr[i];
+      yaw_sum_cam += yaw_arr[i];
 
       double camNoiseMult;
       if(VERBOSE)
@@ -518,7 +544,12 @@ int main(int argc, char** argv)
       double camNoiseTransl = camNoiseMult; //allInliers=>0.01 , noInliers=>1. transl is a unit vector
       double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
       noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, camNoiseTransl, ZERO_NOISE, camNoiseRot));
+
+      noiseModel::Diagonal::shared_ptr constCameraNoise = noiseModel::Diagonal::Variances((Vector(5) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
+
       noiseModel::Diagonal::shared_ptr cameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camNoiseTransl, camNoiseTransl, camNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
+
+      noiseModel::Diagonal::shared_ptr constCameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
       noiseModel::Diagonal::shared_ptr bigNoise6 = noiseModel::Diagonal::Variances((Vector(6) << 10000,10000,10000,10000,10000,10000));
       
@@ -528,10 +559,10 @@ int main(int argc, char** argv)
       graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), bigNoise6)); //Have to add this or else underconstrained if no sonar. Doesn't seem to have much effect - GOOD!.
       //graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(0,0,0), Point3(1,1,1)), bigNoise6)); //Have to add this or else underconstrained if no sonar. Doesn't seem to have much effect - GOOD!. Here, just add random vector because the large noise will essential weight it to zero.
      
-      graphCamOnly.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
-      graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise6)); //Have to add this or else underconstrained
+      graphCamOnly.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), constCameraNoise));
+      graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), constCameraNoise6)); //Have to add this or else underconstrained
 
-      initialCam.insert(t2cam_arr[i], Pose3(Rot3::ypr(yaw_sum,pitch_sum,roll_sum), Point3(x_sum,y_sum,z_sum)));
+      initialCam.insert(t2cam_arr[i], Pose3(Rot3::ypr(yaw_sum_cam,pitch_sum_cam,roll_sum_cam), Point3(x_sum_cam,y_sum_cam,z_sum_cam)));
 
     }
 
@@ -630,6 +661,8 @@ int main(int argc, char** argv)
 
   // result.print("Final Result:\n");
 
+  //resultSonOnly.print();
+
   Marginals marginals(graph, result);
   cout << "Calculated Fusion Marginals" << endl;
   Marginals marginalsSonOnly(graphSonOnly, resultSonOnly);
@@ -701,6 +734,14 @@ int main(int argc, char** argv)
 	  rollprint = resultSonOnly.at<Pose3>(t2son_arr[iSon]).rotation().roll();
 	  pitchprint = resultSonOnly.at<Pose3>(t2son_arr[iSon]).rotation().pitch();
 	  yawprint = resultSonOnly.at<Pose3>(t2son_arr[iSon]).rotation().yaw();
+
+	  //Initial Guess: 
+	  double xinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).x();
+	  double yinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).y();
+	  double zinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).z();
+	  double rollinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).rotation().roll();
+	  double pitchinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).rotation().pitch();
+	  double yawinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).rotation().yaw();
 	  
 	  if(abs(xprint) < 0.001)
 	    xprint = 0;
@@ -714,10 +755,24 @@ int main(int argc, char** argv)
 	    pitchprint = 0;
 	  if(abs(yawprint) < 0.001)
 	    yawprint = 0;
+
+	  if(abs(xinitprint) < 0.001)
+	    xinitprint = 0;
+	  if(abs(yinitprint) < 0.001)
+	    yinitprint = 0;
+	  if(abs(zinitprint) < 0.001)
+	    zinitprint = 0;
+	  if(abs(rollinitprint) < 0.001)
+	    rollinitprint = 0;
+	  if(abs(pitchinitprint) < 0.001)
+	    pitchinitprint = 0;
+	  if(abs(yawinitprint) < 0.001)
+	    yawinitprint = 0;
 	  
 	  cout << t2son_arr[iSon] << " Sonar Only Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
 	  
 	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+	  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
 	  
 	}
       else
@@ -732,6 +787,14 @@ int main(int argc, char** argv)
 	  rollprint = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).rotation().roll();
 	  pitchprint = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).rotation().pitch();
 	  yawprint = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).rotation().yaw();
+
+	  //Initial Guess: 
+	  double xinitprint = initialCam.at<Pose3>(t2son_arr[iSon]).x();
+	  double yinitprint = initialCam.at<Pose3>(t2son_arr[iSon]).y();
+	  double zinitprint = initialCam.at<Pose3>(t2son_arr[iSon]).z();
+	  double rollinitprint = initialCam.at<Pose3>(t2son_arr[iSon]).rotation().roll();
+	  double pitchinitprint = initialCam.at<Pose3>(t2son_arr[iSon]).rotation().pitch();
+	  double yawinitprint = initialCam.at<Pose3>(t2son_arr[iSon]).rotation().yaw();
 	  
 	  if(abs(xprint) < 0.001)
 	    xprint = 0;
@@ -746,18 +809,34 @@ int main(int argc, char** argv)
 	  if(abs(yawprint) < 0.001)
 	    yawprint = 0;
 	  
+	  if(abs(xinitprint) < 0.001)
+	    xinitprint = 0;
+	  if(abs(yinitprint) < 0.001)
+	    yinitprint = 0;
+	  if(abs(zinitprint) < 0.001)
+	    zinitprint = 0;
+	  if(abs(rollinitprint) < 0.001)
+	    rollinitprint = 0;
+	  if(abs(pitchinitprint) < 0.001)
+	    pitchinitprint = 0;
+	  if(abs(yawinitprint) < 0.001)
+	    yawinitprint = 0;
+
 	  cout << t2cam_arr[iCam] << " Cam Only Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
 	  
 	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+	  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
 
 
 	}
       else
 	outfile << ";;;;;;";
 
+      //------------------------------------------------------------------------
       // Calculate and print marginal covariances for all variables
       cout.precision(2); 
       //cout << "x" << i << " covariance:\n" << marginals.marginalCovariance(i) << endl;
+
       cout << "X" << nodeNum << " covariance: ";
       for(int i1=0;i1<6;i1++)
 	{
@@ -773,6 +852,7 @@ int main(int argc, char** argv)
 	  cout << "X" << nodeNum << " Son covariance: ";
 	  for(int i1=0;i1<6;i1++)
 	    {
+	      //Note: If problem here, probably yaw covariance too big
 	      cout << marginalsSonOnly.marginalCovariance(t2son_arr[iSon])(i1,i1) << ",";
 	      outfile << marginalsSonOnly.marginalCovariance(t2son_arr[iSon])(i1,i1) << ";";
 	    }
@@ -780,6 +860,7 @@ int main(int argc, char** argv)
 	}
       else
 	outfile << ";;;;;;";
+
       //------------VidOnly------------//
       //      if(t2cam_arr[iCam]==nodeNum)
       if(!doneCam)	
