@@ -445,6 +445,7 @@ int main(int argc, char** argv)
   Values initial;
   Values initialSon;
   Values initialCam;
+  Values initialCamSon;
 
   //NOTE: addedErr - This is confusing. When both before and after prior addedErr is 7 or less, it has no effect - all the same. When 8 before and after, it begins to change the output. When it is 10, it changes a lot. When 150, doesn't change at all and back to no effect like 0. This is for the simulated data input rectangle200x100 and the sonar only data (the fused data performs differently).
   double addedErr = 0; //Debug: should be 0
@@ -452,6 +453,7 @@ int main(int argc, char** argv)
   initial.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
   initialSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
   initialCam.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+  initialCamSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
 
   //Note: changed just this and didn't effect output of sonar results 0-10
   //addedErr = 0; //Debug: should be 0
@@ -539,6 +541,9 @@ int main(int argc, char** argv)
   roll_sum_cam=0;
   pitch_sum_cam=0;
   yaw_sum_cam=0;
+  double x_sum_camSon = 0;
+  double y_sum_camSon = 0;
+  double z_sum_camSon = 0;  
   int iSonVel = 0;
   //initialize velocities from first sonar data:
   double prev_velx = x_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
@@ -563,9 +568,12 @@ int main(int argc, char** argv)
       //Get previous velocities from sonar data and the corresponding cam unit vector:
       while(t2son_arr[iSonVel+1] <= t2cam_arr[i]) //want sonar t2 that is closest but less than or equal to camera t2
 	{
-	  prev_unitx = xunit_arr[i]; //get the closest cam unit vector to the sonar vector
-	  prev_unity = yunit_arr[i];
-	  prev_unitz = zunit_arr[i];
+	  if(numInliers_arr[i] >= CAM_INLIERS_THRESH)
+	    {
+	      prev_unitx = xunit_arr[i]; //get the closest cam unit vector to the sonar vector
+	      prev_unity = yunit_arr[i];
+	      prev_unitz = zunit_arr[i];
+	    }
 
 	  if(iSonVel >= lengthSon-1)
 	    break;
@@ -576,23 +584,26 @@ int main(int argc, char** argv)
       if(VERBOSE)
 	cout << "Sonar Node: " << t2son_arr[iSonVel] << " -- Using Velocity from Cam Node: " << t2cam_arr[i] << endl;
 
-      prev_velx = x_son_arr[iSonVel]/(t2son_arr[iSonVel]-t1son_arr[iSonVel]);
-      prev_vely = y_son_arr[iSonVel]/(t2son_arr[iSonVel]-t1son_arr[iSonVel]);
+      if(numInliers_son_arr[iSonVel] >= SON_INLIERS_THRESH) //only update prev vel if sufficient inliers
+	{
+	  prev_velx = x_son_arr[iSonVel]/(t2son_arr[iSonVel]-t1son_arr[iSonVel]);
+	  prev_vely = y_son_arr[iSonVel]/(t2son_arr[iSonVel]-t1son_arr[iSonVel]);
+	}
 
       if((prev_unitx == 0)&&(prev_unity == 0)) //avoid div by zero
 	prev_vel_mag = 1; //if unit vector only z (0,0,1) then give it a guess of 1 velocity in z direction
       else if(prev_unitx == 0)
-	prev_vel_mag = prev_vely/prev_unity; //get extimate of VEL magnitude from x estimate. 
+	prev_vel_mag = abs(prev_vely/prev_unity); //get extimate of VEL magnitude from x estimate. 
       else if(prev_unity == 0)
-	prev_vel_mag = prev_velx/prev_unitx; //get extimate of VEL magnitude from y estimate. 
+	prev_vel_mag = abs(prev_velx/prev_unitx); //get extimate of VEL magnitude from y estimate. 
       else
-	prev_vel_mag = ((prev_velx/prev_unitx)+(prev_vely/prev_unity))/2; //get extimate of VEL magnitude by averaging x and y estimates.
+	prev_vel_mag = (abs(prev_velx/prev_unitx)+abs(prev_vely/prev_unity))/2; //get extimate of VEL magnitude by averaging x and y estimates.
 
       prev_velz = prev_vel_mag*prev_unitz; //...then multiply by unitz to get estimated z component corresponding to that unit vector.
       prevSonNoiseTransl = sonNoiseTranslArr[iSonVel];
 
-      cout << "prev_vel (x,y,z,mag)=" << prev_velx << "," << prev_vely << "," << prev_velz << "," << prev_vel_mag << endl;
       cout << "prev_unit (x,y,z)=" << prev_unitx << "," << prev_unity << "," << prev_unitz << endl;
+      cout << "prev_vel (x,y,z,mag)=" << prev_velx << "," << prev_vely << "," << prev_velz << "," << prev_vel_mag << endl;
 
       if(VERBOSE)
 	cout << "prevSonNoiseTransl=" << prevSonNoiseTransl << endl;
@@ -612,6 +623,7 @@ int main(int argc, char** argv)
       //camNoiseMult = 1-(numInliers_arr[i]/MAX_CAM_CORNERS);
       if(numInliers_arr[i] < CAM_INLIERS_THRESH)
 	camNoiseMult = 1-(numInliers_arr[i]/CAM_INLIERS_THRESH);
+	//camNoiseMult = 100; //DEBUG DELETE!!!
       else
 	camNoiseMult = 0.01;
 
@@ -623,6 +635,7 @@ int main(int argc, char** argv)
       double camNoiseTransl = 0.01*camNoiseMult; //allInliers=>0.0001 , noInliers=>0.01. transl is a unit vector
       double camNoiseRot = 0.001*camNoiseMult; //allInliers=>0.00001deg, noInliers=>0.001 deg
       //double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
+      double camSonNoiseTransl = camNoiseMult*100*sqrt(prevSonNoiseTransl*camNoiseTransl); //Geometric Mean * camNoiseMult*100 to reduce effect 
 
       if(VERBOSE)
 	cout << "Cam Noise multipler=" << camNoiseMult << endl;
@@ -633,7 +646,7 @@ int main(int argc, char** argv)
 
       noiseModel::Diagonal::shared_ptr cameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camNoiseTransl, camNoiseTransl, camNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
 
-      noiseModel::Diagonal::shared_ptr cameraSonarNoise6 = noiseModel::Diagonal::Variances((Vector(6) << sqrt(prevSonNoiseTransl*camNoiseTransl), sqrt(prevSonNoiseTransl*camNoiseTransl), sqrt(prevSonNoiseTransl*camNoiseTransl), camNoiseRot, camNoiseRot, camNoiseRot));
+      noiseModel::Diagonal::shared_ptr cameraSonarNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camSonNoiseTransl, camSonNoiseTransl, camSonNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
 
       noiseModel::Diagonal::shared_ptr constCameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)); //ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
@@ -645,16 +658,32 @@ int main(int argc, char** argv)
       double totalEstShiftMag = prev_vel_mag*(t2cam_arr[i]-t1cam_arr[i]);
       cout << "totalEstShiftMag=" << totalEstShiftMag << endl;
 
+      //Update Initial Guesses for Fused Graph
+      if(numInliers_arr[i] >= CAM_INLIERS_THRESH)
+	{
+	  x_sum_camSon += xunit_arr[i]*totalEstShiftMag;
+	  y_sum_camSon += yunit_arr[i]*totalEstShiftMag;
+	  z_sum_camSon += zunit_arr[i]*totalEstShiftMag;
+	}
+      else //Use previous good sonar data
+	{
+	  x_sum_camSon += prev_unitx*totalEstShiftMag;
+	  y_sum_camSon += prev_unity*totalEstShiftMag;
+	  z_sum_camSon += 0.0001;
+	}
+
       graph.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
       //            graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(0,0,0), Point3(1,1,1)), bigNoise6)); //Have to add this or else underconstrained if no sonar. Doesn't seem to have much effect - GOOD!. Here, just add random vector because the large noise will essential weight it to zero.
       graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i]*totalEstShiftMag,yunit_arr[i]*totalEstShiftMag,zunit_arr[i]*totalEstShiftMag)), cameraSonarNoise6)); //Have to add this or else underconstrained     
       //      if(VERBOSE)
-      cout << "Graph Node" << t1cam_arr[i] << "-" << t2cam_arr[i] << " - Cam (x,y,z,roll,pitch,yaw): " << xunit_arr[i]*totalEstShiftMag << "," << yunit_arr[i]*totalEstShiftMag << "," << zunit_arr[i]*totalEstShiftMag << "," << roll_arr[i] << "," << pitch_arr[i] << "," << yaw_arr[i] << " - Noise (Transl, Rot): " << sqrt(prevSonNoiseTransl*camNoiseTransl) << "," << camNoiseRot << endl;
+      cout << "Graph Node" << t1cam_arr[i] << "-" << t2cam_arr[i] << " - Cam (x,y,z,roll,pitch,yaw): " << xunit_arr[i]*totalEstShiftMag << "," << yunit_arr[i]*totalEstShiftMag << "," << zunit_arr[i]*totalEstShiftMag << "," << roll_arr[i] << "," << pitch_arr[i] << "," << yaw_arr[i] << " - Noise (Transl, Rot): " << camSonNoiseTransl << "," << camNoiseRot << endl;
 
       graphCamOnly.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
       graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise6)); //Have to add this or else underconstrained
 
       initialCam.insert(t2cam_arr[i], Pose3(Rot3::ypr(yaw_sum_cam+addedErr,pitch_sum_cam+addedErr,roll_sum_cam+addedErr), Point3(x_sum_cam+addedErr,y_sum_cam+addedErr,z_sum_cam+addedErr)));
+      //Below is for the fused estimates with sonar magnitudes
+      initialCamSon.insert(t2cam_arr[i], Pose3(Rot3::ypr(yaw_sum_cam+addedErr,pitch_sum_cam+addedErr,roll_sum_cam+addedErr), Point3(x_sum_camSon+addedErr,y_sum_camSon+addedErr,z_sum_camSon+addedErr)));
 
       if(VERBOSE)
 	{
@@ -672,7 +701,10 @@ int main(int argc, char** argv)
 
   for(int iFuse=1; iFuse<max(lastSonNode,lastCamNode)+1; iFuse++)
     {
-      if(t2son_arr[iSon1] == iFuse) //If there is a sonar node here:
+      if(
+	 ((t2son_arr[iSon1] == iFuse)&&(numInliers_son_arr[iSon1]>=SON_INLIERS_THRESH)) //If there is a GOOD sonar node here
+	 || ((t2son_arr[iSon1] == iFuse)&&(t2cam_arr[iCam1] == iFuse)&&(numInliers_arr[iCam1]<CAM_INLIERS_THRESH)) //If bad sonar node AND bad cam node, use sonar node
+	 || ((t2son_arr[iSon1] == iFuse)&&(t2cam_arr[iCam1] != iFuse))) //If sonar node, but no cam node
 	{
 	  cout << iFuse << "(sonar node)" << endl;
 	  initial.insert(iFuse, Pose3(Rot3::ypr(initialSon.at<Pose3>(iFuse).rotation().yaw(),initialSon.at<Pose3>(iFuse).rotation().pitch(),initialSon.at<Pose3>(iFuse).rotation().roll()), Point3(initialSon.at<Pose3>(iFuse).x(),initialSon.at<Pose3>(iFuse).y(),initialSon.at<Pose3>(iFuse).z())));
@@ -682,15 +714,21 @@ int main(int argc, char** argv)
 	    iCam1++;
 	  offset = 1; //reset offset
 	}
-      else if(t2cam_arr[iCam1] == iFuse) //If there is a camera node, but no sonar node here, so use last sonar estimate again:
+      else if(t2cam_arr[iCam1] == iFuse) //If there is a good camera node, but no good sonar node here, NEW: use camera estimate //OLD:so use last sonar estimate again:
 	{ 
+	  /***************OLD WAY: ****************************
 	  //NOTE!!! MUST NOT BE EQUAL TO PREVIOUS NODE. CAUSES NAN TO BE OUTPUT FOR COVARIANCES. So, here I add a small amount to x. 
 	  cout << iFuse << " (camonly)"<< endl;
 	  if(iSon1>0) //Make sure not trying to access zero
 	    initial.insert(iFuse, Pose3(Rot3::ypr(initialSon.at<Pose3>(t2son_arr[iSon1-1]).rotation().yaw(),initialSon.at<Pose3>(t2son_arr[iSon1-1]).rotation().pitch(),initialSon.at<Pose3>(t2son_arr[iSon1-1]).rotation().roll()), Point3(initialSon.at<Pose3>(t2son_arr[iSon1-1]).x()+0.001*offset++,initialSon.at<Pose3>(t2son_arr[iSon1-1]).y(),initialSon.at<Pose3>(t2son_arr[iSon1-1]).z())));
+	  	  
 	  else
 	    initial.insert(iFuse, Pose3(Rot3::ypr(0,0,0), Point3(0.001*offset++,0,0))); //Must add small amount in for x or else optimize returns NAN for covariances. Also, must be different each time - hence the *(iFuse-iSon1)
 	  //initial.insert(iFuse, initialSon.at<Pose3>(t2son_arr[iSon1-1]));
+	  ****************************************************/
+
+	  cout << iFuse << " (camonly)"<< endl;
+	  initial.insert(iFuse, Pose3(Rot3::ypr(initialCamSon.at<Pose3>(iFuse).rotation().yaw(),initialCamSon.at<Pose3>(iFuse).rotation().pitch(),initialCamSon.at<Pose3>(iFuse).rotation().roll()), Point3(initialCamSon.at<Pose3>(iFuse).x(),initialCamSon.at<Pose3>(iFuse).y(),initialCamSon.at<Pose3>(iFuse).z())));	  
 
 	  //Increment:
 	  iCam1++;
@@ -749,6 +787,7 @@ int main(int argc, char** argv)
       else
 	continue;
     }
+
 
   //  graph.print();
   // optimize using Levenberg-Marquardt optimization
