@@ -278,6 +278,8 @@ int main(int argc, char** argv)
   float * numCorners_son_arr;
   float * numMatches_son_arr;
   float * numInliers_son_arr;
+  double * sonNoiseTranslArr;
+  sonNoiseTranslArr = new double[lengthSon];
   t1son_arr = new float[lengthSon];
   t2son_arr = new float[lengthSon];
   x_son_arr = new float[lengthSon];
@@ -493,6 +495,7 @@ int main(int argc, char** argv)
       //double sonNoiseTransl = 10*sonNoiseMult; //allInliers=>0.1m, noInliers=>10m
       double sonNoiseRot = 0.001*sonNoiseMult; //allInliers=>0.00001rad, noInliers=>0.001 deg
       //double sonNoiseRot = 10*sonNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
+      sonNoiseTranslArr[i] = sonNoiseTransl;
 
       cout << "Son Noise: " << sonNoiseTransl << "," << sonNoiseRot << endl;
       noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << sonNoiseTransl, sonNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonNoiseRot));
@@ -523,6 +526,16 @@ int main(int argc, char** argv)
   roll_sum_cam=0;
   pitch_sum_cam=0;
   yaw_sum_cam=0;
+  int iSonVel = 0;
+  //initialize velocities from first sonar data:
+  double prev_velx = x_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
+  double prev_vely = y_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
+  double prev_velz = 0;
+  double prevSonNoiseTransl = sonNoiseTranslArr[0];
+  double prev_unitx = xunit_arr[0];
+  double prev_unity = yunit_arr[0];
+  double prev_unitz = zunit_arr[0];
+  double prev_vel_mag = 0;
 
   for(i = 0; i<lengthCam; i++)
     {
@@ -532,6 +545,21 @@ int main(int argc, char** argv)
       roll_sum_cam += roll_arr[i];
       pitch_sum_cam += pitch_arr[i];
       yaw_sum_cam += yaw_arr[i];
+
+      //Get previous velocities from sonar data and the corresponding cam unit vector:
+      while(t2son_arr[iSonVel+1] <= t2cam_arr[i]) //want sonar t2 that is closest but less than or equal to camera t2
+	{
+	  iSonVel++;
+	  prev_unitx = xunit_arr[i]; //get the closest cam unit vector to the sonar vector
+	  prev_unity = yunit_arr[i];
+	  prev_unitz = zunit_arr[i];
+	}
+
+      prev_velx = x_son_arr[iSonVel]/(t2son_arr[iSonVel]-t1son_arr[iSonVel]);
+      prev_vely = y_son_arr[iSonVel]/(t2son_arr[iSonVel]-t1son_arr[iSonVel]);
+      prev_vel_mag = ((prev_velx/prev_unitx)+(prev_vely/prev_unity))/2; //get extimate of VEL magnitude by averaging x and y estimates. Should just need this.
+      prev_velz = prev_vel_mag*prev_unitz; //...then multiply by unitz to get estimated z component corresponding to that unit vector.
+      prevSonNoiseTransl = sonNoiseTranslArr[iSonVel];
 
       double camNoiseMult;
       if(VERBOSE)
@@ -562,6 +590,8 @@ int main(int argc, char** argv)
 
       noiseModel::Diagonal::shared_ptr cameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camNoiseTransl, camNoiseTransl, camNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
 
+      noiseModel::Diagonal::shared_ptr cameraSonarNoise6 = noiseModel::Diagonal::Variances((Vector(6) << sqrt(prevSonNoiseTransl*camNoiseTransl), sqrt(prevSonNoiseTransl*camNoiseTransl), sqrt(prevSonNoiseTransl*camNoiseTransl), camNoiseRot, camNoiseRot, camNoiseRot));
+
       noiseModel::Diagonal::shared_ptr constCameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)); //ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
       noiseModel::Diagonal::shared_ptr zeroCameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
@@ -571,8 +601,9 @@ int main(int argc, char** argv)
       /*NOTE: The 4th variance (Roll?) in the output is constant at the maximum, which seems to be the estimated input value for the first guess. The 5 values in the noise input vector seem to correspond to: 1-1, 2-2, 3-3, 4-5, 5-6 to the output covariance 6 item vector. This was determined by changing one input noise value at a time and looking at the resultant noise vector at the output. Seems to be a problem with the GTSAM code? So, for now, since we aren't using roll at all, just ignore it. BUT make sure to remember the correspondences - so set first three in the Noise(5) vector to translNoise and the last two to rotNoise. */
       
       graph.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
-      graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(0,0,0), Point3(1,1,1)), bigNoise6)); //Have to add this or else underconstrained if no sonar. Doesn't seem to have much effect - GOOD!. Here, just add random vector because the large noise will essential weight it to zero.
-     
+      //      graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(0,0,0), Point3(1,1,1)), bigNoise6)); //Have to add this or else underconstrained if no sonar. Doesn't seem to have much effect - GOOD!. Here, just add random vector because the large noise will essential weight it to zero.
+      graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i]*prev_vel_mag,yunit_arr[i]*prev_vel_mag,zunit_arr[i]*prev_vel_mag)), cameraSonarNoise6)); //Have to add this or else underconstrained     
+
       graphCamOnly.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
       graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise6)); //Have to add this or else underconstrained
 
@@ -592,6 +623,7 @@ int main(int argc, char** argv)
   int iSon1 = 0;
   int iCam1 = 0;
   int offset = 1; //Used as a multiplier to avoid identical nodes
+
   for(int iFuse=1; iFuse<max(lastSonNode,lastCamNode)+1; iFuse++)
     {
       if(t2son_arr[iSon1] == iFuse) //If there is a sonar node here:
