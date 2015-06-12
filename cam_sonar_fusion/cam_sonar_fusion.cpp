@@ -444,6 +444,7 @@ int main(int argc, char** argv)
 
   Values initial;
   Values initialSon;
+  Values initialSonFuse;
   Values initialCam;
   Values initialCamSon;
 
@@ -452,6 +453,7 @@ int main(int argc, char** argv)
    
   initial.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
   initialSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+  initialSonFuse.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
   initialCam.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
   initialCamSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
 
@@ -481,12 +483,36 @@ int main(int argc, char** argv)
   x_sum_son = 0;
   y_sum_son = 0;
   yaw_sum_son = 0;
+  double x_sum_sonFuse = 0;
+  double y_sum_sonFuse = 0;
+  double yaw_sum_sonFuse = 0;
+  double x_last = x_son_arr[0];
+  double y_last = y_son_arr[0];
+  double yaw_last = yaw_son_arr[0];
+
   for(i = 0; i<lengthSon; i++)    
     {
       cout << i+1 << "/" << lengthSon << endl;
       x_sum_son += x_son_arr[i];
       y_sum_son += y_son_arr[i];
       yaw_sum_son += yaw_son_arr[i];
+
+      if(numInliers_son_arr[i] >= SON_INLIERS_THRESH)
+	{
+	  x_sum_sonFuse += x_son_arr[i];
+	  y_sum_sonFuse += y_son_arr[i];
+	  yaw_sum_sonFuse += yaw_son_arr[i];
+
+	  x_last = x_son_arr[i];
+	  y_last = y_son_arr[i];
+	  yaw_last = yaw_son_arr[i];
+	}
+      else //Not a good sonar node - use previous good estimate
+	{
+	  x_sum_sonFuse += x_last;
+	  y_sum_sonFuse += y_last;
+	  yaw_sum_sonFuse += yaw_last;
+	}
 
       double sonNoiseMult;
       if(VERBOSE)
@@ -506,23 +532,28 @@ int main(int argc, char** argv)
       //double sonNoiseTransl = 10*sonNoiseMult; //allInliers=>0.1m, noInliers=>10m
       double sonNoiseRot = 0.001*sonNoiseMult; //allInliers=>0.00001rad, noInliers=>0.001 deg
       //double sonNoiseRot = 10*sonNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
+      double sonFuseNoiseTransl = sonNoiseMult*100*sonNoiseTransl; //*sonNoiseMult*100 to reduce effect 
+      double sonFuseNoiseRot = sonNoiseMult*100*sonNoiseRot; //*sonNoiseMult*100 to reduce effect 
+
       sonNoiseTranslArr[i] = sonNoiseTransl;
 
       if(VERBOSE)
 	cout << "Son Noise: " << sonNoiseTransl << "," << sonNoiseRot << endl;
 
       noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << sonNoiseTransl, sonNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonNoiseRot));
+      noiseModel::Diagonal::shared_ptr sonarFuseNoise = noiseModel::Diagonal::Variances((Vector(6) << sonFuseNoiseTransl, sonFuseNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonFuseNoiseRot));
 
       //NOTE: If make sonar noise 0.1, causes indeterminate solution! 
       //...Problem with yaw growing unbounded. For now, set to ZERO_NOISE!!! 
       noiseModel::Diagonal::shared_ptr constSonarNoise = noiseModel::Diagonal::Variances((Vector(6) << 0.01, 0.01, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
-      graph.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
+      graph.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarFuseNoise));
       graphSonOnly.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
 
-      cout << "Graph Node - Son (x,y,yaw): " << x_son_arr[i] << "," << y_son_arr[i] << "," << yaw_son_arr[i] << " - Noise (Transl, Rot): " << sonNoiseTransl << "," << sonNoiseRot << endl;
+      cout << "Graph Node - Son (x,y,yaw): " << x_son_arr[i] << "," << y_son_arr[i] << "," << yaw_son_arr[i] << " - Noise (Transl, Rot): " << sonFuseNoiseTransl << "," << sonFuseNoiseRot << endl;
 
       initialSon.insert(t2son_arr[i], Pose3(Rot3::ypr(yaw_sum_son+addedErr,0,0), Point3(x_sum_son+addedErr,y_sum_son+addedErr,0)));
+      initialSonFuse.insert(t2son_arr[i], Pose3(Rot3::ypr(yaw_sum_sonFuse+addedErr,0,0), Point3(x_sum_sonFuse+addedErr,y_sum_sonFuse+addedErr,0)));
       
       if(VERBOSE)
 	{
@@ -707,7 +738,7 @@ int main(int argc, char** argv)
 	 || ((t2son_arr[iSon1] == iFuse)&&(t2cam_arr[iCam1] != iFuse))) //If sonar node, but no cam node
 	{
 	  cout << iFuse << "(sonar node)" << endl;
-	  initial.insert(iFuse, Pose3(Rot3::ypr(initialSon.at<Pose3>(iFuse).rotation().yaw(),initialSon.at<Pose3>(iFuse).rotation().pitch(),initialSon.at<Pose3>(iFuse).rotation().roll()), Point3(initialSon.at<Pose3>(iFuse).x(),initialSon.at<Pose3>(iFuse).y(),initialSon.at<Pose3>(iFuse).z())));
+	  initial.insert(iFuse, Pose3(Rot3::ypr(initialSonFuse.at<Pose3>(iFuse).rotation().yaw(),initialSonFuse.at<Pose3>(iFuse).rotation().pitch(),initialSonFuse.at<Pose3>(iFuse).rotation().roll()), Point3(initialSonFuse.at<Pose3>(iFuse).x(),initialSonFuse.at<Pose3>(iFuse).y(),initialSonFuse.at<Pose3>(iFuse).z())));
 	  //initial.insert(iFuse, initialSon.at<Pose3>(iFuse));
 	  iSon1++;
 	  if(t2cam_arr[iCam1] == iFuse) //If there is also a camera node here:
@@ -732,6 +763,8 @@ int main(int argc, char** argv)
 
 	  //Increment:
 	  iCam1++;
+	  if(t2son_arr[iSon1] == iFuse) //If there is also a camera node here:
+	    iSon1++;
 	}
       else
 	continue; //Neither cam nor son here. skip node.
