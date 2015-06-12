@@ -85,6 +85,8 @@ using namespace gtsam;
 #define MAX_CAM_CORNERS 1000 //Should most likely be 1000
 #define MAX_SON_CORNERS 1000 //Should most likely be 1000
 #define ZERO_NOISE 0.00001
+#define SON_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau  _______
+#define CAM_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau /
 
 int main(int argc, char** argv) 
 {
@@ -485,7 +487,12 @@ int main(int argc, char** argv)
       double sonNoiseMult;
       if(VERBOSE)
 	cout << "son corners,matches,inliers=" << numCorners_son_arr[i] << "," << numMatches_son_arr[i] << "," << numInliers_son_arr[i] << endl;
-      sonNoiseMult = 1-(numInliers_son_arr[i]/MAX_SON_CORNERS);
+      //      sonNoiseMult = 1-(numInliers_son_arr[i]/MAX_SON_CORNERS);
+      if(numInliers_son_arr[i] < SON_INLIERS_THRESH)
+	sonNoiseMult = 1-(numInliers_son_arr[i]/SON_INLIERS_THRESH);
+      else
+	sonNoiseMult = 0.01;
+
       if(sonNoiseMult < 0.01) //Avoid zeros, if 1000 maxCorners this is 990 inliers.
 	sonNoiseMult = 0.01;
       
@@ -573,7 +580,12 @@ int main(int argc, char** argv)
       //END DEBUG: USE MATCHES, CORNERS, and INLIERS for Noise calculation:
 
       //Just use numInliers for noise calculation 
-      camNoiseMult = 1-(numInliers_arr[i]/MAX_CAM_CORNERS);
+      //camNoiseMult = 1-(numInliers_arr[i]/MAX_CAM_CORNERS);
+      if(numInliers_arr[i] < CAM_INLIERS_THRESH)
+	camNoiseMult = 1-(numInliers_arr[i]/CAM_INLIERS_THRESH);
+      else
+	camNoiseMult = 0.01;
+
       if(camNoiseMult < 0.01) //Avoid zeros, if 1000 maxCorners this is 990 inliers.
 	camNoiseMult = 0.01;
 
