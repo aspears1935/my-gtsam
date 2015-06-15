@@ -84,7 +84,7 @@ using namespace gtsam;
 #define CAM_INLIERS_WEIGHT 0.3333333
 #define MAX_CAM_CORNERS 1000 //Should most likely be 1000
 #define MAX_SON_CORNERS 1000 //Should most likely be 1000
-#define ZERO_NOISE 0.00001
+#define ZERO_NOISE 0.000001//0.00001
 #define SON_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau  _______
 #define CAM_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau /
 
@@ -397,6 +397,7 @@ int main(int argc, char** argv)
   //Write the column headings on the output file:
   ofstream outfile("outputGTSAM.csv");
   outfile << "frame/time?;x;y;z;roll;pitch;yaw;";
+  outfile << "xInit;yInit;zInit;rollInit;pitchInit;yawInit;";
   outfile << "xson;yson;zson;rollson;pitchson;yawson;";
   outfile << "xsonSum;ysonSum;zsonSum;rollsonSum;pitchsonSum;yawsonSum;";
   outfile << "xcam;ycam;zcam;rollcam;pitchcam;yawcam;";
@@ -533,7 +534,7 @@ int main(int argc, char** argv)
       double sonNoiseRot = 0.001*sonNoiseMult; //allInliers=>0.00001rad, noInliers=>0.001 deg
       //double sonNoiseRot = 10*sonNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
       double sonFuseNoiseTransl = sonNoiseMult*100*sonNoiseTransl; //*sonNoiseMult*100 to reduce effect 
-      double sonFuseNoiseRot = sonNoiseMult*100*sonNoiseRot; //*sonNoiseMult*100 to reduce effect 
+      //double sonFuseNoiseRot = sonNoiseMult*100*sonNoiseRot; //*sonNoiseMult*100 to reduce effect 
 
       sonNoiseTranslArr[i] = sonNoiseTransl;
 
@@ -541,16 +542,17 @@ int main(int argc, char** argv)
 	cout << "Son Noise: " << sonNoiseTransl << "," << sonNoiseRot << endl;
 
       noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << sonNoiseTransl, sonNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonNoiseRot));
-      noiseModel::Diagonal::shared_ptr sonarFuseNoise = noiseModel::Diagonal::Variances((Vector(6) << sonFuseNoiseTransl, sonFuseNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonFuseNoiseRot));
+      noiseModel::Diagonal::shared_ptr sonarFuseNoise = noiseModel::Diagonal::Variances((Vector(6) << sonFuseNoiseTransl, sonFuseNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, sonNoiseRot));
 
       //NOTE: If make sonar noise 0.1, causes indeterminate solution! 
       //...Problem with yaw growing unbounded. For now, set to ZERO_NOISE!!! 
       noiseModel::Diagonal::shared_ptr constSonarNoise = noiseModel::Diagonal::Variances((Vector(6) << 0.01, 0.01, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
+      noiseModel::Diagonal::shared_ptr zeroSonarNoise = noiseModel::Diagonal::Variances((Vector(6) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
       graph.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarFuseNoise));
-      graphSonOnly.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarNoise));
+      graphSonOnly.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), zeroSonarNoise));
 
-      cout << "Graph Node - Son (x,y,yaw): " << x_son_arr[i] << "," << y_son_arr[i] << "," << yaw_son_arr[i] << " - Noise (Transl, Rot): " << sonFuseNoiseTransl << "," << sonFuseNoiseRot << endl;
+      cout << "Graph Node - Son (x,y,yaw): " << x_son_arr[i] << "," << y_son_arr[i] << "," << yaw_son_arr[i] << " - Noise (Transl, Rot): " << sonFuseNoiseTransl << "," << sonNoiseRot << endl;
 
       initialSon.insert(t2son_arr[i], Pose3(Rot3::ypr(yaw_sum_son+addedErr,0,0), Point3(x_sum_son+addedErr,y_sum_son+addedErr,0)));
       initialSonFuse.insert(t2son_arr[i], Pose3(Rot3::ypr(yaw_sum_sonFuse+addedErr,0,0), Point3(x_sum_sonFuse+addedErr,y_sum_sonFuse+addedErr,0)));
@@ -654,7 +656,6 @@ int main(int argc, char** argv)
       //camNoiseMult = 1-(numInliers_arr[i]/MAX_CAM_CORNERS);
       if(numInliers_arr[i] < CAM_INLIERS_THRESH)
 	camNoiseMult = 1-(numInliers_arr[i]/CAM_INLIERS_THRESH);
-	//camNoiseMult = 100; //DEBUG DELETE!!!
       else
 	camNoiseMult = 0.01;
 
@@ -671,13 +672,13 @@ int main(int argc, char** argv)
       if(VERBOSE)
 	cout << "Cam Noise multipler=" << camNoiseMult << endl;
 
-      noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, camNoiseTransl, camNoiseRot, camNoiseRot)); //4th (2nd from last) was ZERO_NOISE but changed.??
+      noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, ZERO_NOISE/*camNoiseTransl*/, ZERO_NOISE/*camNoiseRot*/, camNoiseRot)); //4th (2nd from last) was ZERO_NOISE but changed.??
 
       noiseModel::Diagonal::shared_ptr constCameraNoise = noiseModel::Diagonal::Variances((Vector(5) << 0.1, 0.1, 0.1, 0.1, 0.1));//ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
       noiseModel::Diagonal::shared_ptr cameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camNoiseTransl, camNoiseTransl, camNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
 
-      noiseModel::Diagonal::shared_ptr cameraSonarNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camSonNoiseTransl, camSonNoiseTransl, camSonNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
+      noiseModel::Diagonal::shared_ptr cameraSonarNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camSonNoiseTransl, camSonNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, camNoiseRot));
 
       noiseModel::Diagonal::shared_ptr constCameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)); //ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
@@ -724,11 +725,16 @@ int main(int argc, char** argv)
     }
 
   //graphCamOnly.print();
+  initialCamSon.print();
 
   /********************Create Fused Initial Guess*******************/
   int iSon1 = 0;
   int iCam1 = 0;
   int offset = 1; //Used as a multiplier to avoid identical nodes
+  int fusedSum_x = 0;
+  int fusedSum_y = 0;
+  int fusedSum_yaw = 0;
+
 
   for(int iFuse=1; iFuse<max(lastSonNode,lastCamNode)+1; iFuse++)
     {
@@ -737,8 +743,13 @@ int main(int argc, char** argv)
 	 || ((t2son_arr[iSon1] == iFuse)&&(t2cam_arr[iCam1] == iFuse)&&(numInliers_arr[iCam1]<CAM_INLIERS_THRESH)) //If bad sonar node AND bad cam node, use sonar node
 	 || ((t2son_arr[iSon1] == iFuse)&&(t2cam_arr[iCam1] != iFuse))) //If sonar node, but no cam node
 	{
+	  fusedSum_x += x_son_arr[iFuse];
+	  fusedSum_y += y_son_arr[iFuse];
+	  fusedSum_yaw += yaw_son_arr[iFuse];
+
 	  cout << iFuse << "(sonar node)" << endl;
-	  initial.insert(iFuse, Pose3(Rot3::ypr(initialSonFuse.at<Pose3>(iFuse).rotation().yaw(),initialSonFuse.at<Pose3>(iFuse).rotation().pitch(),initialSonFuse.at<Pose3>(iFuse).rotation().roll()), Point3(initialSonFuse.at<Pose3>(iFuse).x(),initialSonFuse.at<Pose3>(iFuse).y(),initialSonFuse.at<Pose3>(iFuse).z())));
+	  //initial.insert(iFuse, Pose3(Rot3::ypr(initialSonFuse.at<Pose3>(iFuse).rotation().yaw(),initialSonFuse.at<Pose3>(iFuse).rotation().pitch(),initialSonFuse.at<Pose3>(iFuse).rotation().roll()), Point3(initialSonFuse.at<Pose3>(iFuse).x(),initialSonFuse.at<Pose3>(iFuse).y(),initialSonFuse.at<Pose3>(iFuse).z())));
+	  initial.insert(iFuse, Pose3(Rot3::ypr(initialCamSon.at<Pose3>(iFuse).rotation().yaw(),initialCamSon.at<Pose3>(iFuse).rotation().pitch(),initialCamSon.at<Pose3>(iFuse).rotation().roll()), Point3(initialCamSon.at<Pose3>(iFuse).x(),initialCamSon.at<Pose3>(iFuse).y(),initialCamSon.at<Pose3>(iFuse).z())));	  //DEBUG!! DELETE!!!
 	  //initial.insert(iFuse, initialSon.at<Pose3>(iFuse));
 	  iSon1++;
 	  if(t2cam_arr[iCam1] == iFuse) //If there is also a camera node here:
@@ -757,6 +768,9 @@ int main(int argc, char** argv)
 	    initial.insert(iFuse, Pose3(Rot3::ypr(0,0,0), Point3(0.001*offset++,0,0))); //Must add small amount in for x or else optimize returns NAN for covariances. Also, must be different each time - hence the *(iFuse-iSon1)
 	  //initial.insert(iFuse, initialSon.at<Pose3>(t2son_arr[iSon1-1]));
 	  ****************************************************/
+	  fusedSum_x += initialCamSon.at<Pose3>(iFuse).x();
+	  fusedSum_y += initialCamSon.at<Pose3>(iFuse).y();
+	  fusedSum_yaw += initialCamSon.at<Pose3>(iFuse).rotation().yaw();
 
 	  cout << iFuse << " (camonly)"<< endl;
 	  initial.insert(iFuse, Pose3(Rot3::ypr(initialCamSon.at<Pose3>(iFuse).rotation().yaw(),initialCamSon.at<Pose3>(iFuse).rotation().pitch(),initialCamSon.at<Pose3>(iFuse).rotation().roll()), Point3(initialCamSon.at<Pose3>(iFuse).x(),initialCamSon.at<Pose3>(iFuse).y(),initialCamSon.at<Pose3>(iFuse).z())));	  
@@ -768,6 +782,7 @@ int main(int argc, char** argv)
 	}
       else
 	continue; //Neither cam nor son here. skip node.
+      cout << "Fused Sum (x,y,yaw): " << fusedSum_x << "," << fusedSum_y << "," << fusedSum_yaw << endl;
     }
   /**************************************************************/
   
@@ -821,8 +836,36 @@ int main(int argc, char** argv)
 	continue;
     }
 
+  //AMS Custom Print Graph:
+  /*  cout << "Fused Size = " << graph.size() << endl;
 
-  //  graph.print();
+   for(i=0;i<graph.size();i++) 
+    {
+      if(graph.exists(i))
+	{
+	  cout << i << endl;
+	  //graph.at(i)->print();//< endl;
+	  cout << graph.at(i)->x() << endl;
+	  for(;;);
+	  double xprint = graph.at<Pose3>(i).x();
+	  double yprint = graph.at<Pose3>(i).y();
+	  double yawprint = graph.at<Pose3>(i).rotation().yaw();
+	  
+	  if(abs(xprint) < 0.001)
+	    xprint = 0;
+	  if(abs(yprint) < 0.001)
+	    yprint = 0;
+	  if(abs(yawprint) < 0.001)
+	    yawprint = 0;
+	  cout << i << " Fused Graph: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
+
+	}
+      else
+	continue;
+    }
+	  */
+
+  graph.print();
   // optimize using Levenberg-Marquardt optimization
   Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
   cout << "Optimized Fusion Graph" << endl;
@@ -837,8 +880,6 @@ int main(int argc, char** argv)
 
   Marginals marginals(graph, result);
   cout << "Calculated Fusion Marginals" << endl;
-  //  Marginals marginals(graphSonOnly, resultSonOnly); //DEBUG DELETE!!!
-
   Marginals marginalsSonOnly(graphSonOnly, resultSonOnly);
   cout << "Calculated Sonar Marginals" << endl;
   Marginals marginalsCamOnly(graphCamOnly, resultCamOnly);
@@ -847,9 +888,12 @@ int main(int argc, char** argv)
 
   cout << 0 << " Result: x,y,yaw = " << result.at<Pose3>(0).x() << "," << result.at<Pose3>(0).y() << "," << result.at<Pose3>(0).rotation().yaw() << endl;
   outfile << 0 << ";" << result.at<Pose3>(0).x() << ";" << result.at<Pose3>(0).y() << ";" << result.at<Pose3>(0).z() << ";" << result.at<Pose3>(0).rotation().roll() << ";" << result.at<Pose3>(0).rotation().pitch() << ";" << result.at<Pose3>(0).rotation().yaw() << ";";
+  outfile << initial.at<Pose3>(0).x() << ";" << initial.at<Pose3>(0).y() << ";" << initial.at<Pose3>(0).z() << ";" << initial.at<Pose3>(0).rotation().roll() << ";" << initial.at<Pose3>(0).rotation().pitch() << ";" << initial.at<Pose3>(0).rotation().yaw() << ";";
+
   cout << 0 << " Son Result: x,y,yaw = " << resultSonOnly.at<Pose3>(0).x() << "," << resultSonOnly.at<Pose3>(0).y() << "," << resultSonOnly.at<Pose3>(0).rotation().yaw() << endl;
   outfile << resultSonOnly.at<Pose3>(0).x() << ";" << resultSonOnly.at<Pose3>(0).y() << ";" << resultSonOnly.at<Pose3>(0).z() << ";" << resultSonOnly.at<Pose3>(0).rotation().roll() << ";" << resultSonOnly.at<Pose3>(0).rotation().pitch() << ";" << resultSonOnly.at<Pose3>(0).rotation().yaw() << ";";
   outfile << initialSon.at<Pose3>(0).x() << ";" << initialSon.at<Pose3>(0).y() << ";" << initialSon.at<Pose3>(0).z() << ";" << initialSon.at<Pose3>(0).rotation().roll() << ";" << initialSon.at<Pose3>(0).rotation().pitch() << ";" << initialSon.at<Pose3>(0).rotation().yaw() << ";";
+
   cout << 0 << " Cam Result: x,y,yaw = " << resultCamOnly.at<Pose3>(0).x() << "," << resultCamOnly.at<Pose3>(0).y() << "," << resultCamOnly.at<Pose3>(0).rotation().yaw() << endl;
   outfile << resultCamOnly.at<Pose3>(0).x() << ";" << resultCamOnly.at<Pose3>(0).y() << ";" << resultCamOnly.at<Pose3>(0).z() << ";" << resultCamOnly.at<Pose3>(0).rotation().roll() << ";" << resultCamOnly.at<Pose3>(0).rotation().pitch() << ";" << resultCamOnly.at<Pose3>(0).rotation().yaw() << ";";
   outfile << initialCam.at<Pose3>(0).x() << ";" << initialCam.at<Pose3>(0).y() << ";" << initialCam.at<Pose3>(0).z() << ";" << initialCam.at<Pose3>(0).rotation().roll() << ";" << initialCam.at<Pose3>(0).rotation().pitch() << ";" << initialCam.at<Pose3>(0).rotation().yaw() << ";";
@@ -884,6 +928,14 @@ int main(int argc, char** argv)
       double pitchprint = result.at<Pose3>(nodeNum).rotation().pitch();
       double yawprint = result.at<Pose3>(nodeNum).rotation().yaw();
 
+      //Initial Guess: 
+      double xinitprint = initial.at<Pose3>(nodeNum).x();
+      double yinitprint = initial.at<Pose3>(nodeNum).y();
+      double zinitprint = initial.at<Pose3>(nodeNum).z();
+      double rollinitprint = initial.at<Pose3>(nodeNum).rotation().roll();
+      double pitchinitprint = initial.at<Pose3>(nodeNum).rotation().pitch();
+      double yawinitprint = initial.at<Pose3>(nodeNum).rotation().yaw();
+
       if(abs(xprint) < 0.001)
 	xprint = 0;
       if(abs(yprint) < 0.001)
@@ -897,9 +949,23 @@ int main(int argc, char** argv)
       if(abs(yawprint) < 0.001)
 	yawprint = 0;
 
+      if(abs(xinitprint) < 0.001)
+	xinitprint = 0;
+      if(abs(yinitprint) < 0.001)
+	yinitprint = 0;
+      if(abs(zinitprint) < 0.001)
+	zinitprint = 0;
+      if(abs(rollinitprint) < 0.001)
+	rollinitprint = 0;
+      if(abs(pitchinitprint) < 0.001)
+	pitchinitprint = 0;
+      if(abs(yawinitprint) < 0.001)
+	yawinitprint = 0;
+
       cout << nodeNum << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
       
       outfile << nodeNum << ";" << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+      outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
 
       //-------------SonOnly-------------//
       if(t2son_arr[iSon]==nodeNum)
