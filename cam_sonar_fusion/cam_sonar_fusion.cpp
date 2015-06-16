@@ -548,8 +548,10 @@ int main(int argc, char** argv)
       //...Problem with yaw growing unbounded. For now, set to ZERO_NOISE!!! 
       noiseModel::Diagonal::shared_ptr constSonarNoise = noiseModel::Diagonal::Variances((Vector(6) << 0.01, 0.01, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
       noiseModel::Diagonal::shared_ptr zeroSonarNoise = noiseModel::Diagonal::Variances((Vector(6) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
+      noiseModel::Diagonal::shared_ptr constSonarNoise1 = noiseModel::Diagonal::Variances((Vector(6) << 1,1,1,1,1,1));
+      noiseModel::Diagonal::shared_ptr constSonarNoise10 = noiseModel::Diagonal::Variances((Vector(6) << 10,10,10,10,10,10));
 
-      graph.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), sonarFuseNoise));
+      graph.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), constSonarNoise10));//sonarFuseNoise));
       graphSonOnly.add(BetweenFactor<Pose3>(t1son_arr[i], t2son_arr[i], Pose3(Rot3::ypr(yaw_son_arr[i],0,0), Point3(x_son_arr[i],y_son_arr[i],0)), zeroSonarNoise));
 
       cout << "Graph Node - Son (x,y,yaw): " << x_son_arr[i] << "," << y_son_arr[i] << "," << yaw_son_arr[i] << " - Noise (Transl, Rot): " << sonFuseNoiseTransl << "," << sonNoiseRot << endl;
@@ -681,6 +683,7 @@ int main(int argc, char** argv)
       noiseModel::Diagonal::shared_ptr cameraSonarNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camSonNoiseTransl, camSonNoiseTransl, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, camNoiseRot));
 
       noiseModel::Diagonal::shared_ptr constCameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)); //ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
+      noiseModel::Diagonal::shared_ptr constCameraNoise6_1 = noiseModel::Diagonal::Variances((Vector(6) << 1,1,1,1,1,1)); //ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
       noiseModel::Diagonal::shared_ptr zeroNoise6 = noiseModel::Diagonal::Variances((Vector(6) << ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 
@@ -704,9 +707,9 @@ int main(int argc, char** argv)
 	  z_sum_camSon += 0.0001;
 	}
 
-      graph.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
+      //      graph.add(EssentialMatrixConstraint(t1cam_arr[i], t2cam_arr[i], EssentialMatrix(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Unit3(xunit_arr[i],yunit_arr[i],zunit_arr[i])), cameraNoise));
       //            graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(0,0,0), Point3(1,1,1)), bigNoise6)); //Have to add this or else underconstrained if no sonar. Doesn't seem to have much effect - GOOD!. Here, just add random vector because the large noise will essential weight it to zero.
-      graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i]*totalEstShiftMag,yunit_arr[i]*totalEstShiftMag,zunit_arr[i]*totalEstShiftMag)), cameraSonarNoise6)); //Have to add this or else underconstrained     
+      graph.add(BetweenFactor<Pose3>(t1cam_arr[i], t2cam_arr[i], Pose3(Rot3::ypr(yaw_arr[i],pitch_arr[i],roll_arr[i]), Point3(xunit_arr[i]*totalEstShiftMag,yunit_arr[i]*totalEstShiftMag,zunit_arr[i]*totalEstShiftMag)), constCameraNoise6_1));//cameraSonarNoise6)); //Have to add this or else underconstrained     
       //      if(VERBOSE)
       cout << "Graph Node" << t1cam_arr[i] << "-" << t2cam_arr[i] << " - Cam (x,y,z,roll,pitch,yaw): " << xunit_arr[i]*totalEstShiftMag << "," << yunit_arr[i]*totalEstShiftMag << "," << zunit_arr[i]*totalEstShiftMag << "," << roll_arr[i] << "," << pitch_arr[i] << "," << yaw_arr[i] << " - Noise (Transl, Rot): " << camSonNoiseTransl << "," << camNoiseRot << endl;
 
