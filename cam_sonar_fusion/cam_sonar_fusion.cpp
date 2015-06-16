@@ -354,7 +354,12 @@ int main(int argc, char** argv)
       yunit_arr[i] = (float)(atof(tmpstring.c_str()));
       getline(inFileCam,tmpstring,';');
       zunit_arr[i] = (float)(atof(tmpstring.c_str()));
-    
+      //Convert to unit vector if not
+      double unit_mag = sqrt(xunit_arr[i]*xunit_arr[i]+yunit_arr[i]*yunit_arr[i]+zunit_arr[i]*zunit_arr[i]);
+      xunit_arr[i] = xunit_arr[i]/unit_mag;
+      yunit_arr[i] = yunit_arr[i]/unit_mag;
+      zunit_arr[i] = zunit_arr[i]/unit_mag;
+
       //Convert from degrees to radians:
       getline(inFileCam,tmpstring,';');
       roll_arr[i] = (float)(atof(tmpstring.c_str()))*PI/180;
@@ -371,6 +376,7 @@ int main(int argc, char** argv)
       numInliers_arr[i] = (float)(atof(tmpstring.c_str()));
     }    
 
+  for(;;);
   //Find the first and last nodes:
   firstSonNode = t1son_arr[0];
   firstCamNode = t1cam_arr[0];
