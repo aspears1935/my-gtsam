@@ -602,6 +602,8 @@ int main(int argc, char** argv)
 	  
 	  if(sonNoiseMult < 0.01) //Avoid zeros, if 1000 maxCorners this is 990 inliers.
 	    sonNoiseMult = 0.01;
+
+	  sonNoiseMult*=0.01;
 	  
 	  if(VERBOSE)
 	    cout << "Son Noise multipler=" << sonNoiseMult << endl;
@@ -648,9 +650,9 @@ int main(int argc, char** argv)
 	  graphSonOnly.add(BetweenFactor<Pose3>(t1son_arr[iSon2], t2son_arr[iSon2], Pose3(Rot3::ypr(yaw_son_arr[iSon2],0,0), Point3(x_son_arr[iSon2],y_son_arr[iSon2],0)), sonarNoise));//zeroSonarNoise));
 	  
 	  cout << "Graph Node " << t1son_arr[iSon2] << "-" << t2son_arr[iSon2]  << " - Son (x,y,yaw):     " << x_son_arr[iSon2] << "," << y_son_arr[iSon2] << "," << yaw_son_arr[iSon2] << "       - Noise (Transl, Rot): " << sonNoiseTransl << "," << sonNoiseRot << endl;
-	  string tmp;
-	  sonarNoise->print(tmp);
-	  graph.at(graph.size()-1)->print();
+	  //string tmp;
+	  //sonarNoise->print(tmp);
+	  //graph.at(graph.size()-1)->print();
 	  
 	  initialSon.insert(t2son_arr[iSon2], Pose3(Rot3::ypr(yaw_sum_son+addedErr,0,0), Point3(x_sum_son+addedErr,y_sum_son+addedErr,0)));
 	  initialSonRobust.insert(t2son_arr[iSon2], Pose3(Rot3::ypr(yaw_sum_sonRobust+addedErr,0,0), Point3(x_sum_sonRobust+addedErr,y_sum_sonRobust+addedErr,0)));
@@ -756,11 +758,15 @@ int main(int argc, char** argv)
 	  //double camNoiseTransl = camNoiseMult; //allInliers=>0.01 , noInliers=>1. transl is a unit vector
 	  //      double camNoiseTransl = 10*camNoiseMult; //allInliers=>0.1 , noInliers=>10. transl is a unit vector
 	  double camNoiseTransl = 0.01*camNoiseMult; //allInliers=>0.0001 , noInliers=>0.01. transl is a unit vector
-	  double camNoiseRot = 0.001*camNoiseMult; //allInliers=>0.00001deg, noInliers=>0.001 deg
-	  //double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
-	  double camSonNoiseTransl = camNoiseMult*100*sqrt(prev_sonNoiseTranslRobust*camNoiseTransl); //Geometric Mean * camNoiseMult*100 to reduce effect 
 	  if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH)
-	    camNoiseMult *= 10; //AMS ADDED 6/17 - otherwise get bad result because bad cam data bleeding through. maybe need this for sonar too. Maybe change magnitude of both errors by 100 - maybe 10^camNoiseMult? Right now sonar is behaving, but maybe because only 0,0 for erronious nodes and not different direction.
+	    camNoiseTransl*=1000; //1000
+	  double camNoiseRot = 0.001*camNoiseMult; //allInliers=>0.00001deg, noInliers=>0.001 deg
+	  if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH)
+	    camNoiseRot*=1; //100
+	  //double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
+	  double camSonNoiseTransl = /*camNoiseMult*100**/sqrt(prev_sonNoiseTranslRobust*camNoiseTransl); //Geometric Mean * camNoiseMult*100 to reduce effect 
+	  //	  if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH)
+	  //  camNoiseMult *= 10; //AMS ADDED 6/17 - otherwise get bad result because bad cam data bleeding through. maybe need this for sonar too. Maybe change magnitude of both errors by 100 - maybe 10^camNoiseMult? Right now sonar is behaving, but maybe because only 0,0 for erronious nodes and not different direction.
 
 	  if(VERBOSE)
 	    cout << "Cam Noise multipler=" << camNoiseMult << endl;
@@ -847,7 +853,8 @@ int main(int argc, char** argv)
 	  
 	  if(i != t2son_arr[iSon2]) //If no corresponding sonar node, use past data:
 	    {
-	      noiseModel::Diagonal::shared_ptr prev_sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << prev_sonNoiseTransl*10, prev_sonNoiseTransl*10, 0.1, 0.01, 0.01, prev_sonNoiseRot*10)); //Tried changing yaw error to ZERO, but didn't change yaw estimate at all
+	      noiseModel::Diagonal::shared_ptr prev_sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << prev_sonNoiseTransl, prev_sonNoiseTransl, 0.01, 0.001, 0.001, prev_sonNoiseRot)); //Tried changing yaw error to ZERO, but didn't change yaw estimate at all
+	      //	      noiseModel::Diagonal::shared_ptr prev_sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << prev_sonNoiseTransl*10, prev_sonNoiseTransl*10, 0.1, 0.01, 0.01, prev_sonNoiseRot*10)); //Tried changing yaw error to ZERO, but didn't change yaw estimate at all
 	      graph.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(prev_yawvel_son*timeDiffCam,0,0), Point3(prev_xvel_son*timeDiffCam,prev_yvel_son*timeDiffCam,0)), prev_sonarNoise));
 	      cout << "Graph Node " << t1cam_arr[iCam2] << "-" << t2cam_arr[iCam2]  << " - Son Gap (x,y,yaw): " << prev_xvel_son*timeDiffCam << "," << prev_yvel_son*timeDiffCam << "," << prev_yawvel_son*timeDiffCam << "       - Noise (Transl, Rot): " << prev_sonNoiseTransl*10 << "," << prev_sonNoiseRot*10 << endl;
 	    }	  
