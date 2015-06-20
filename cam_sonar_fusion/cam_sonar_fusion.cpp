@@ -79,12 +79,12 @@ using namespace std;
 using namespace gtsam;
 
 #define VERBOSE false
-#define CAM_CORNERS_WEIGHT 0.3333333
-#define CAM_MATCHES_WEIGHT 0.3333333
-#define CAM_INLIERS_WEIGHT 0.3333333
-#define MAX_CAM_CORNERS 1000 //Should most likely be 1000
-#define MAX_SON_CORNERS 1000 //Should most likely be 1000
-#define ZERO_NOISE 0.000001//0.00001
+//#define CAM_CORNERS_WEIGHT 0.3333333
+//#define CAM_MATCHES_WEIGHT 0.3333333
+//#define CAM_INLIERS_WEIGHT 0.3333333
+//#define MAX_CAM_CORNERS 1000 //Should most likely be 1000
+//#define MAX_SON_CORNERS 1000 //Should most likely be 1000
+#define ZERO_NOISE 0.00001
 #define SON_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau  _______
 #define CAM_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau /
 
@@ -93,23 +93,9 @@ int main(int argc, char** argv)
   char sonInputFileName[256];
   char camInputFileName[256];
 
-  double x_sum_cam = 0;
-  double y_sum_cam = 0;
-  double z_sum_cam = 0;
-  double roll_sum_cam = 0;
-  double pitch_sum_cam = 0;
-  double yaw_sum_cam = 0;
-
-  double x_sum_son = 0;
-  double y_sum_son = 0;
-  double z_sum_son = 0;
-  double roll_sum_son = 0;
-  double pitch_sum_son = 0;
-  double yaw_sum_son = 0;
-
   int firstSonNode, firstCamNode, lastSonNode, lastCamNode;
 
-  if(argc < 2)
+  if(argc < 3)
     {
       cout << "Not Enough Args. Usage: ./gtsam <sonar input CSV file with x,y,theta> <camera input CSV file with x,y,z,roll,pitch,yaw>" << endl << "Example: ./gtsam soninput.csv caminput.csv" << endl;
       return 0;
@@ -280,8 +266,8 @@ int main(int argc, char** argv)
   float * numCorners_son_arr;
   float * numMatches_son_arr;
   float * numInliers_son_arr;
-  double * sonNoiseTranslArr;
-  sonNoiseTranslArr = new double[lengthSon];
+  //  double * sonNoiseTranslArr;
+  //  sonNoiseTranslArr = new double[lengthSon];
   t1son_arr = new float[lengthSon];
   t2son_arr = new float[lengthSon];
   x_son_arr = new float[lengthSon];
@@ -322,7 +308,8 @@ int main(int argc, char** argv)
       t1son_arr[i] = 10*(float)(atof(tmpstring.c_str()));
       getline(inFileSon,tmpstring,';');
       t2son_arr[i] = 10*(float)(atof(tmpstring.c_str()));
-      cout << "son t1,t2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
+      if(VERBOSE)
+	cout << "son t1,t2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
 
       getline(inFileSon,tmpstring,';');
       x_son_arr[i] = (float)(atof(tmpstring.c_str()));
@@ -346,7 +333,8 @@ int main(int argc, char** argv)
       t1cam_arr[i] = 10*(float)(atof(tmpstring.c_str()));
       getline(inFileCam,tmpstring,';');
       t2cam_arr[i] = 10*(float)(atof(tmpstring.c_str()));
-      cout << "cam t1,t2 = " << t1cam_arr[i] << "," << t2cam_arr[i] << endl;
+      if(VERBOSE)
+	cout << "cam t1,t2 = " << t1cam_arr[i] << "," << t2cam_arr[i] << endl;
 
       getline(inFileCam,tmpstring,';');
       xunit_arr[i] = (float)(atof(tmpstring.c_str()));
@@ -393,8 +381,8 @@ int main(int argc, char** argv)
 	}
       for(int i=0; i<lengthCam; i++)
 	{
-	  cout << "x,y,z=" <<  xunit_arr[i] << "," << yunit_arr[i] << "," << zunit_arr[i] << endl;
-	  cout << "roll,pitch,yaw=" << roll_arr[i] << "," << pitch_arr[i] << "," << yaw_arr[i] << endl;
+	  cout << "xcam,ycam,zcam=" <<  xunit_arr[i] << "," << yunit_arr[i] << "," << zunit_arr[i] << endl;
+	  cout << "camera roll,pitch,yaw=" << roll_arr[i] << "," << pitch_arr[i] << "," << yaw_arr[i] << endl;
 	}
     }
 
@@ -454,7 +442,7 @@ int main(int argc, char** argv)
   Values initialCam;
   Values initialCamSon;
 
-  //NOTE: addedErr - This is confusing. When both before and after prior addedErr is 7 or less, it has no effect - all the same. When 8 before and after, it begins to change the output. When it is 10, it changes a lot. When 150, doesn't change at all and back to no effect like 0. This is for the simulated data input rectangle200x100 and the sonar only data (the fused data performs differently).
+  //NOTE: addedErr - This is confusing. When both before and after prior addedErr is 7 or less, it has no effect - all the same. When 8 before and after, it begins to change the output. When it is 10, it changes a lot. When 150, doesn't change at all and back to no effect like 0. This is for the simulated data input rectangle200x100 and the sonar only data (the fused data performs differently). Documentation says that if there is only one solution, it should be found no matter what initial guess - but needs to be close to soln if multiple solutions.
   double addedErr = 0; //Debug: should be 0
    
   initial.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
@@ -479,45 +467,47 @@ int main(int argc, char** argv)
   //noiseModel::Diagonal::shared_ptr sonarNoise = noiseModel::Diagonal::Variances((Vector(6) << 1, 1, 1, 1, 1, 1));
 
   //EssentialMatrix e_matrix(zeroRot3, xUnit3);
-  EssentialMatrix e_matrix(Rot3::ypr(yaw_arr[0],pitch_arr[0],roll_arr[0]), Unit3(xunit_arr[0],yunit_arr[0],zunit_arr[0]));
+  //EssentialMatrix e_matrix(Rot3::ypr(yaw_arr[0],pitch_arr[0],roll_arr[0]), Unit3(xunit_arr[0],yunit_arr[0],zunit_arr[0]));
 
   //noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << 0.1, 0.1, 0.1, 0.1, 0.1));
 
+  // i is main loop counter
+  int i;
 
   //Sonar Inits:
-  int i;
   double x_sum_sonRobust = 0;
   double y_sum_sonRobust = 0;
   double yaw_sum_sonRobust = 0;
-  double prev_x_sonRobust = x_son_arr[0];
-  double prev_y_sonRobust = y_son_arr[0];
-  double prev_yaw_sonRobust = yaw_son_arr[0];
-  double prev_xvel_sonRobust = x_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
-  double prev_yvel_sonRobust = y_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
-  double prev_yawvel_sonRobust = yaw_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
+  double x_sonRobust = x_son_arr[0];
+  double y_sonRobust = y_son_arr[0];
+  double yaw_sonRobust = yaw_son_arr[0];
+  double xvel_sonRobust = x_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
+  double yvel_sonRobust = y_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
+  double zvel_sonRobust = 0;
+  double yawvel_sonRobust = yaw_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
   //  double prev_vel_mag_sonRobust = sqrt(prev_xvel_sonRobust*prev_xvel_sonRobust + prev_yvel_sonRobust*prev_yvel_sonRobust);
-  double prev_sonNoiseTranslRobust = 0.0001;
-  double prev_sonNoiseRotRobust = 0.00001;
-  x_sum_son = 0;
-  y_sum_son = 0;
-  yaw_sum_son = 0;
-  double prev_x_son = x_son_arr[0];
-  double prev_y_son = y_son_arr[0];
-  double prev_yaw_son = yaw_son_arr[0];
-  double prev_xvel_son = x_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
-  double prev_yvel_son = y_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
-  double prev_yawvel_son = yaw_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
+  double sonNoiseTranslRobust = 0.0001;
+  double sonNoiseRotRobust = 0.00001;
+  double x_sum_son = 0;
+  double y_sum_son = 0;
+  double yaw_sum_son = 0;
+  //  double prev_x_son = x_son_arr[0];
+  //  double prev_y_son = y_son_arr[0];
+  //  double prev_yaw_son = yaw_son_arr[0];
+  double xvel_son = x_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
+  double yvel_son = y_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
+  double yawvel_son = yaw_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
   //  double prev_vel_mag_son = sqrt(prev_xvel_son*prev_xvel_son + prev_yvel_son*prev_yvel_son);
-  double prev_sonNoiseTransl = 0.0001;
-  double prev_sonNoiseRot = 0.00001;
+  //  double prev_sonNoiseTransl = 0.0001;
+  //  double prev_sonNoiseRot = 0.00001;
 
   //Camera Inits:
-  x_sum_cam=0;
-  y_sum_cam=0;
-  z_sum_cam=0;
-  roll_sum_cam=0;
-  pitch_sum_cam=0;
-  yaw_sum_cam=0;
+  double x_sum_cam=0;
+  double y_sum_cam=0;
+  double z_sum_cam=0;
+  double roll_sum_cam=0;
+  double pitch_sum_cam=0;
+  double yaw_sum_cam=0;
   double x_sum_camSon = 0;
   double y_sum_camSon = 0;
   double z_sum_camSon = 0;  
@@ -526,7 +516,6 @@ int main(int argc, char** argv)
   //initialize velocities from first sonar data:
   //  double prev_velx = x_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
   //  double prev_vely = y_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
-  double prev_velz = 0;
   //double prevSonNoiseTransl = 1;
   double prev_unitx = xunit_arr[0];
   double prev_unity = yunit_arr[0];
@@ -578,19 +567,19 @@ int main(int argc, char** argv)
 	      y_sum_sonRobust += y_son_arr[iSon2];
 	      yaw_sum_sonRobust += yaw_son_arr[iSon2];
 	      
-	      prev_x_sonRobust = x_son_arr[iSon2];
-	      prev_y_sonRobust = y_son_arr[iSon2];
-	      prev_yaw_sonRobust = yaw_son_arr[iSon2];
-	      prev_xvel_sonRobust = x_son_arr[iSon2]/timeDiffSon;
-	      prev_yvel_sonRobust = y_son_arr[iSon2]/timeDiffSon;
-	      prev_yawvel_sonRobust = yaw_son_arr[iSon2]/timeDiffSon;
+	      x_sonRobust = x_son_arr[iSon2];
+	      y_sonRobust = y_son_arr[iSon2];
+	      yaw_sonRobust = yaw_son_arr[iSon2];
+	      xvel_sonRobust = x_son_arr[iSon2]/timeDiffSon;
+	      yvel_sonRobust = y_son_arr[iSon2]/timeDiffSon;
+	      yawvel_sonRobust = yaw_son_arr[iSon2]/timeDiffSon;
 	      //	      prev_vel_mag_sonRobust = sqrt(prev_xvel_sonRobust*prev_xvel_sonRobust + prev_yvel_sonRobust*prev_yvel_sonRobust);
 	    }
 	  else //Not a good sonar node - use previous good estimate
 	    {
-	      x_sum_sonRobust += prev_x_sonRobust;
-	      y_sum_sonRobust += prev_y_sonRobust;
-	      yaw_sum_sonRobust += prev_yaw_sonRobust;
+	      x_sum_sonRobust += x_sonRobust;
+	      y_sum_sonRobust += y_sonRobust;
+	      yaw_sum_sonRobust += yaw_sonRobust;
 	    }
 
 	  double sonNoiseMult;
@@ -614,28 +603,28 @@ int main(int argc, char** argv)
 	  double sonFuseNoiseTransl = sonNoiseMult*100*sonNoiseTransl; //*sonNoiseMult*100 to reduce effect 
 	  //double sonFuseNoiseRot = sonNoiseMult*100*sonNoiseRot; //*sonNoiseMult*100 to reduce effect 
 	  
-	  sonNoiseTranslArr[iSon2] = sonNoiseTransl;
+	  //sonNoiseTranslArr[iSon2] = sonNoiseTransl;
 	  
 	  if(VERBOSE)
 	    cout << "Son Noise: " << sonNoiseTransl << "," << sonNoiseRot << endl;
 
 	  if(numInliers_son_arr[iSon2] >= SON_INLIERS_THRESH) //Good Sonar Node then update noise nodes
 	    {
-	      prev_sonNoiseTranslRobust = sonNoiseTransl;
-	      prev_sonNoiseRotRobust = sonNoiseRot;
+	      sonNoiseTranslRobust = sonNoiseTransl;
+	      sonNoiseRotRobust = sonNoiseRot;
 	    }
 
 	  //Update prev_ vbls
-	  prev_x_son = x_son_arr[iSon2];
-	  prev_y_son = y_son_arr[iSon2];
-	  prev_yaw_son = yaw_son_arr[iSon2];
+	  //prev_x_son = x_son_arr[iSon2];
+	  //prev_y_son = y_son_arr[iSon2];
+	  //prev_yaw_son = yaw_son_arr[iSon2];
 	  //timeDiffSon = t2son_arr[iSon2]-t1son_arr[iSon2];
-	  prev_xvel_son = x_son_arr[iSon2]/timeDiffSon;
-	  prev_yvel_son = y_son_arr[iSon2]/timeDiffSon;
-	  prev_yawvel_son = yaw_son_arr[iSon2]/timeDiffSon;
+	  xvel_son = x_son_arr[iSon2]/timeDiffSon;
+	  yvel_son = y_son_arr[iSon2]/timeDiffSon;
+	  yawvel_son = yaw_son_arr[iSon2]/timeDiffSon;
 	  //	  prev_vel_mag_son = sqrt(prev_xvel_son*prev_xvel_son + prev_yvel_son*prev_yvel_son);
-	  prev_sonNoiseTransl = sonNoiseTransl;
-	  prev_sonNoiseRot = sonNoiseRot;
+	  //	  prev_sonNoiseTransl = sonNoiseTransl;
+	  //	  prev_sonNoiseRot = sonNoiseRot;
 
 	  //NOTE: If make sonar noise 0.1, causes indeterminate solution! 
 	  //...Problem with yaw growing unbounded. For now, set to ZERO_NOISE!!! 
@@ -730,23 +719,23 @@ int main(int argc, char** argv)
 	      if((prev_unitxRobust == 0)&&(prev_unityRobust == 0)) //avoid div by zero
 		prev_vel_mag = 1; //if unit vector only z (0,0,1) then give it a guess of 1 velocity in z direction
 	      else if(prev_unitxRobust == 0)
-		prev_vel_mag = abs(prev_yvel_sonRobust/prev_unityRobust); //get extimate of VEL magnitude from x estimate. 
+		prev_vel_mag = abs(yvel_sonRobust/prev_unityRobust); //get extimate of VEL magnitude from x estimate. 
 	      else if(prev_unityRobust == 0)
-		prev_vel_mag = abs(prev_xvel_sonRobust/prev_unitxRobust); //get extimate of VEL magnitude from y estimate. 
+		prev_vel_mag = abs(xvel_sonRobust/prev_unitxRobust); //get extimate of VEL magnitude from y estimate. 
 	      else
-		prev_vel_mag = (abs(prev_xvel_sonRobust/prev_unitxRobust)+abs(prev_yvel_sonRobust/prev_unityRobust))/2; //get extimate of VEL magnitude by averaging x and y estimates.
+		prev_vel_mag = (abs(xvel_sonRobust/prev_unitxRobust)+abs(yvel_sonRobust/prev_unityRobust))/2; //get extimate of VEL magnitude by averaging x and y estimates.
 	      
-	      prev_velz = prev_vel_mag*prev_unitzRobust; //...then multiply by unitz to get estimated z component corresponding to that unit vector.
+	      zvel_sonRobust = prev_vel_mag*prev_unitzRobust; //...then multiply by unitz to get estimated z component corresponding to that unit vector.
 	      //prevSonNoiseTransl = sonNoiseTranslArr[iSonVel];
 	      
 	      if(VERBOSE)
 		{
 		  cout << "prev_unit (x,y,z)=" << prev_unitxRobust << "," << prev_unityRobust << "," << prev_unitzRobust << endl;
-		  cout << "prev_vel (x,y,z,mag)=" << prev_xvel_sonRobust << "," << prev_yvel_sonRobust << "," << prev_velz << "," << prev_vel_mag << endl;
+		  cout << "son vel (x,y,z,mag)=" << xvel_sonRobust << "," << yvel_sonRobust << "," << zvel_sonRobust << "," << prev_vel_mag << endl;
 		}
 
 	      if(VERBOSE)
-		cout << "prevSonNoiseTransl=" << prev_sonNoiseTranslRobust << endl;
+		cout << "prevSonNoiseTransl=" << sonNoiseTranslRobust << endl;
 	      
 	      double camNoiseMult;
 	      if(VERBOSE)
@@ -778,7 +767,7 @@ int main(int argc, char** argv)
 	      //if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH)
 		//	camNoiseRot*=1; //100
 	      //double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
-	      double camSonNoiseTransl = /*camNoiseMult*100**/sqrt(prev_sonNoiseTranslRobust*camNoiseTransl); //Geometric Mean * camNoiseMult*100 to reduce effect 
+	      double camSonNoiseTransl = /*camNoiseMult*100**/sqrt(sonNoiseTranslRobust*camNoiseTransl); //Geometric Mean * camNoiseMult*100 to reduce effect 
 	      //	  if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH)
 	      //  camNoiseMult *= 10; //AMS ADDED 6/17 - otherwise get bad result because bad cam data bleeding through. maybe need this for sonar too. Maybe change magnitude of both errors by 100 - maybe 10^camNoiseMult? Right now sonar is behaving, but maybe because only 0,0 for erronious nodes and not different direction.
 	      
@@ -865,8 +854,8 @@ int main(int argc, char** argv)
 	      */
 
 	      //Add Sonar Node
-	      graph.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(prev_yawvel_son*timeDiffCam,0,0), Point3(prev_xvel_son*timeDiffCam,prev_yvel_son*timeDiffCam,0)), sonarNoise));
-	      cout << "Graph Node " << t1cam_arr[iCam2] << "-" << t2cam_arr[iCam2]  << " - Son (x,y,yaw):     " << prev_xvel_son*timeDiffCam << "," << prev_yvel_son*timeDiffCam << "," << prev_yawvel_son*timeDiffCam << "       - Noise (Transl, Rot): " << sonNoiseTransl << "," << sonNoiseRot << endl;
+	      graph.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(yawvel_son*timeDiffCam,0,0), Point3(xvel_son*timeDiffCam,yvel_son*timeDiffCam,0)), sonarNoise));
+	      cout << "Graph Node " << t1cam_arr[iCam2] << "-" << t2cam_arr[iCam2]  << " - Son (x,y,yaw):     " << xvel_son*timeDiffCam << "," << yvel_son*timeDiffCam << "," << yawvel_son*timeDiffCam << "       - Noise (Transl, Rot): " << sonNoiseTransl << "," << sonNoiseRot << endl;
 
 	      cout << iSon2 << "---" <<  iCam2 << endl;
 
