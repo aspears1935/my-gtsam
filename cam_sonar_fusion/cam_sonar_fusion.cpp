@@ -604,7 +604,7 @@ int main(int argc, char** argv)
 	  yaw_sum_son += yaw_son_arr[iSon2];
 	  
 	  //Get robust estimate for odometry using only good nodes and extrapolation:
-	  if(numInliers_son_arr[iSon2] >= SON_INLIERS_THRESH) //Good Sonar Node:
+	  if((numInliers_son_arr[iSon2] >= SON_INLIERS_THRESH)&&(estValid_son_arr[iSon2]==1)) //Good Sonar Node:
 	    {
 	      x_sum_sonRobust += x_son_arr[iSon2];
 	      y_sum_sonRobust += y_son_arr[iSon2];
@@ -629,7 +629,9 @@ int main(int argc, char** argv)
 	  if(VERBOSE)
 	    cout << "son corners,matches,inliers=" << numCorners_son_arr[iSon2] << "," << numMatches_son_arr[iSon2] << "," << numInliers_son_arr[iSon2] << endl;
 	  //      sonNoiseMult = 1-(numInliers_son_arr[i]/MAX_SON_CORNERS);
-	  if(numInliers_son_arr[iSon2] < SON_INLIERS_THRESH) //if not enough matches...
+	  if(estValid_son_arr[iSon2] != 1) //non-valid data
+	    sonNoiseMult = 1;
+	  else if(numInliers_son_arr[iSon2] < SON_INLIERS_THRESH) //if not enough matches...
 	    sonNoiseMult = 1-(numInliers_son_arr[iSon2]/SON_INLIERS_THRESH); //weight the confidence measure
 	  else //Good enough matches to assume accurate
 	    sonNoiseMult = 0.01;
@@ -651,7 +653,7 @@ int main(int argc, char** argv)
 	  if(VERBOSE)
 	    cout << "Son Noise (transl,rot): " << sonNoiseTransl << "," << sonNoiseRot << endl;
 
-	  if(numInliers_son_arr[iSon2] >= SON_INLIERS_THRESH) //Good Sonar Node then update noise nodes
+	  if((numInliers_son_arr[iSon2] >= SON_INLIERS_THRESH)&&(estValid_son_arr[iSon2]==1)) //Good Sonar Node then update noise nodes:
 	    {
 	      sonNoiseTranslRobust = sonNoiseTransl;
 	      sonNoiseRotRobust = sonNoiseRot;
@@ -710,7 +712,7 @@ int main(int argc, char** argv)
 	      yaw_sum_cam += yaw_arr[iCam2];
 
 
-	      if(numInliers_arr[iCam2] >= CAM_INLIERS_THRESH) //Good cam node, update noise vbls:
+	      if((numInliers_arr[iCam2] >= CAM_INLIERS_THRESH)&&(estValid_arr[iCam2]==1)) //Good cam node, update noise vbls:
 		{
 		  xunit_camRobust = xunit_arr[iCam2]; //get the closest cam unit vector to the sonar vector
 		  yunit_camRobust = yunit_arr[iCam2];
@@ -796,7 +798,9 @@ int main(int argc, char** argv)
 	      
 	      //Just use numInliers for noise calculation 
 	      //camNoiseMult = 1-(numInliers_arr[iCam2]/MAX_CAM_CORNERS);
-	      if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH) //If not enough good matches...
+	      if(estValid_arr[iCam2] != 1) //non-valid data
+		camNoiseMult = 1;
+	      else if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH) //If not enough good matches...
 		camNoiseMult = 1-(numInliers_arr[iCam2]/CAM_INLIERS_THRESH); //Weight the confidence by inliers
 	      else //Sufficiently good matches to assume high accuracy
 		camNoiseMult = 0.01;
@@ -807,8 +811,8 @@ int main(int argc, char** argv)
 	      //double camNoiseTransl = camNoiseMult; //allInliers=>0.01 , noInliers=>1. transl is a unit vector
 	      //      double camNoiseTransl = 10*camNoiseMult; //allInliers=>0.1 , noInliers=>10. transl is a unit vector
 	      double camNoiseTransl = 0.01*camNoiseMult; //allInliers=>0.0001 , noInliers=>0.01. transl is a unit vector
-	      if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH)
-				camNoiseTransl*=100; //1000
+	      if((numInliers_arr[iCam2] < CAM_INLIERS_THRESH)||(estValid_arr[iCam2]!=1))
+		camNoiseTransl*=100; //1000
 	      double camNoiseRot = 0.001*camNoiseMult; //allInliers=>0.00001deg, noInliers=>0.001 deg
 	      //if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH)
 		//	camNoiseRot*=1; //100
@@ -847,7 +851,7 @@ int main(int argc, char** argv)
 	      //prev_z_cam = zunit_arr[iCam2]*totalEstShiftMag;  
 	      
 	      //Update Initial Guesses for Fused Graph
-	      if(numInliers_arr[iCam2] >= CAM_INLIERS_THRESH)
+	      if((numInliers_arr[iCam2] >= CAM_INLIERS_THRESH)&&(estValid_arr[iCam2]==1)) //Good cam node
 		{
 		  x_sum_camSon += xunit_arr[iCam2]*totalEstShiftMag;
 		  y_sum_camSon += yunit_arr[iCam2]*totalEstShiftMag;
@@ -860,7 +864,7 @@ int main(int argc, char** argv)
 		  z_sum_camSon += zunit_camRobust*totalEstShiftMag;//0.0001;
 		}
 
-	      if(numInliers_arr[iCam2] >= CAM_INLIERS_THRESH) //Good cam node, update noise vbls:
+	      if((numInliers_arr[iCam2] >= CAM_INLIERS_THRESH)&&(estValid_arr[iCam2]==1)) //Good cam node, update noise vbls:
 		{
 		  camNoiseTranslRobust = camSonNoiseTransl;
 		  camNoiseRotRobust = camNoiseRot;
