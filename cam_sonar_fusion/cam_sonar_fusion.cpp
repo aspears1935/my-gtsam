@@ -87,7 +87,7 @@ using namespace gtsam;
 #define ZERO_NOISE 0.00001
 #define SON_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau  _______
 #define CAM_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau /
-#define TIME_NODE_MULT 10 //Time to node number multiplier. ie t=0.1->node 1 if mult=10
+#define TIME_NODE_MULT 100 //Time to node number multiplier. ie t=0.1->node 1 if mult=10
 #define PRINT_UNIX_TIMES true //Print abs unix timestamps instead of zero-based node numbers
 
 int main(int argc, char** argv) 
@@ -329,9 +329,9 @@ int main(int argc, char** argv)
     {
       //Sonar Data:
       getline(inFileSon,tmpstring,';');
-      t1son_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
+      t1son_arr[i] = TIME_NODE_MULT*(SONAR_TIME0-(float)(atof(tmpstring.c_str())));
       getline(inFileSon,tmpstring,';');
-      t2son_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
+      t2son_arr[i] = TIME_NODE_MULT*(SONAR_TIME0-(float)(atof(tmpstring.c_str())));
       if(VERBOSE)
 	cout << "son t1,t2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
 
