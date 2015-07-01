@@ -329,9 +329,9 @@ int main(int argc, char** argv)
     {
       //Sonar Data:
       getline(inFileSon,tmpstring,';');
-      t1son_arr[i] = TIME_NODE_MULT*(SONAR_TIME0-(float)(atof(tmpstring.c_str())));
+      t1son_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
       getline(inFileSon,tmpstring,';');
-      t2son_arr[i] = TIME_NODE_MULT*(SONAR_TIME0-(float)(atof(tmpstring.c_str())));
+      t2son_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
       if(VERBOSE)
 	cout << "son t1,t2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
 
@@ -353,6 +353,13 @@ int main(int argc, char** argv)
       estValid_son_arr[i] = (int)(atoi(tmpstring.c_str()));
 
       getline(inFileSon,tmpstring,'\n'); //Discard rest of line
+    }
+
+  SONAR_TIME0=t1son_arr[0]/TIME_NODE_MULT; //Initial time for sonar data in unix timestamp seconds
+  for(int i=0; i<lengthSon; i++) //Subtract out the SONAR_TIME0 from all nodes
+    {
+      t1son_arr[i] = t1son_arr[i]-(SONAR_TIME0*TIME_NODE_MULT);
+      t2son_arr[i] = t2son_arr[i]-(SONAR_TIME0*TIME_NODE_MULT);
     }
 
   for(int i=0; i<lengthCam; i++)
@@ -399,7 +406,6 @@ int main(int argc, char** argv)
     }    
 
   //Find the first and last nodes:
-  SONAR_TIME0=t1son_arr[0]/TIME_NODE_MULT; //Initial time for sonar data in unix timestamp seconds
   firstSonNode = t1son_arr[0];
   firstCamNode = t1cam_arr[0];
   lastSonNode = t2son_arr[lengthSon-1];
