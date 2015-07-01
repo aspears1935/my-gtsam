@@ -87,6 +87,7 @@ using namespace gtsam;
 #define ZERO_NOISE 0.00001
 #define SON_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau  _______
 #define CAM_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau /
+#define TIME_NODE_MULT 10 //Time to node number multiplier. ie t=0.1->node 1 if mult=10
 
 int main(int argc, char** argv) 
 {
@@ -95,6 +96,8 @@ int main(int argc, char** argv)
 
   int firstSonNode, firstCamNode, lastSonNode, lastCamNode;
 
+  double SONAR_TIME0;
+  
   if(argc < 3)
     {
       cout << "Not Enough Args. Usage: ./gtsam <sonar input CSV file with x,y,theta> <camera input CSV file with x,y,z,roll,pitch,yaw>" << endl << "Example: ./gtsam soninput.csv caminput.csv" << endl;
@@ -190,6 +193,14 @@ int main(int argc, char** argv)
   else
     cout << "DIDN'T FIND NUMINLIERS HEADING! - " << tmpstring << endl;
 
+  getline(inFileSon,tmpstring,';');
+  if(strcmp(tmpstring.c_str(),"estValid")==0) //FOUND cam numInliers HEADING
+    cout << "FOUND ESTVALID HEADING! - " << tmpstring << endl;
+  else
+    cout << "DIDN'T FIND ESTVALID HEADING! - " << tmpstring << endl;
+
+  getline(inFileSon,tmpstring,'\n'); //Discard rest of line
+
   //Read in camera input file headings:
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"t1")==0) //FOUND cam t1 HEADING
@@ -257,6 +268,14 @@ int main(int argc, char** argv)
   else
     cout << "DIDN'T FIND NUMINLIERS HEADING! - " << tmpstring << endl;
 
+  getline(inFileCam,tmpstring,';');
+  if(strcmp(tmpstring.c_str(),"estValid")==0) //FOUND cam numInliers HEADING
+    cout << "FOUND ESTVALID HEADING! - " << tmpstring << endl;
+  else
+    cout << "DIDN'T FIND ESTVALID HEADING! - " << tmpstring << endl;
+
+  getline(inFileCam,tmpstring,'\n'); //Discard rest of line
+
   //Create input data arrays:
   float * t1son_arr;
   float * t2son_arr;
@@ -266,6 +285,7 @@ int main(int argc, char** argv)
   float * numCorners_son_arr;
   float * numMatches_son_arr;
   float * numInliers_son_arr;
+  int * estValid_son_arr;
   //  double * sonNoiseTranslArr;
   //  sonNoiseTranslArr = new double[lengthSon];
   t1son_arr = new float[lengthSon];
@@ -276,6 +296,7 @@ int main(int argc, char** argv)
   numCorners_son_arr = new float[lengthSon];
   numMatches_son_arr = new float[lengthSon];
   numInliers_son_arr = new float[lengthSon];
+  estValid_son_arr = new int[lengthSon];
 
   float * t1cam_arr;
   float * t2cam_arr;
@@ -288,6 +309,7 @@ int main(int argc, char** argv)
   float * numCorners_arr;
   float * numMatches_arr;
   float * numInliers_arr;
+  int * estValid_arr;
   t1cam_arr = new float[lengthCam];
   t2cam_arr = new float[lengthCam];
   xunit_arr = new float[lengthCam];
@@ -299,15 +321,16 @@ int main(int argc, char** argv)
   numCorners_arr = new float[lengthCam];
   numMatches_arr = new float[lengthCam];
   numInliers_arr = new float[lengthCam];
+  estValid_arr = new int[lengthCam];
 
   //Read in the input data:
   for(int i=0; i<lengthSon; i++)
     {
       //Sonar Data:
       getline(inFileSon,tmpstring,';');
-      t1son_arr[i] = 10*(float)(atof(tmpstring.c_str()));
+      t1son_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
       getline(inFileSon,tmpstring,';');
-      t2son_arr[i] = 10*(float)(atof(tmpstring.c_str()));
+      t2son_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
       if(VERBOSE)
 	cout << "son t1,t2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
 
@@ -324,15 +347,20 @@ int main(int argc, char** argv)
       numMatches_son_arr[i] = (float)(atof(tmpstring.c_str()));
       getline(inFileSon,tmpstring,';');
       numInliers_son_arr[i] = (float)(atof(tmpstring.c_str()));
+
+      getline(inFileSon,tmpstring,';');
+      estValid_son_arr[i] = (int)(atoi(tmpstring.c_str()));
+
+      getline(inFileSon,tmpstring,'\n'); //Discard rest of line
     }
 
   for(int i=0; i<lengthCam; i++)
     {
       //Camera Data:
       getline(inFileCam,tmpstring,';');
-      t1cam_arr[i] = 10*(float)(atof(tmpstring.c_str()));
+      t1cam_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
       getline(inFileCam,tmpstring,';');
-      t2cam_arr[i] = 10*(float)(atof(tmpstring.c_str()));
+      t2cam_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
       if(VERBOSE)
 	cout << "cam t1,t2 = " << t1cam_arr[i] << "," << t2cam_arr[i] << endl;
 
@@ -362,9 +390,15 @@ int main(int argc, char** argv)
       numMatches_arr[i] = (float)(atof(tmpstring.c_str()));
       getline(inFileCam,tmpstring,';');
       numInliers_arr[i] = (float)(atof(tmpstring.c_str()));
+
+      getline(inFileCam,tmpstring,';');
+      estValid_arr[i] = (int)(atoi(tmpstring.c_str()));
+
+      getline(inFileCam,tmpstring,'\n'); //Discard rest of line
     }    
 
   //Find the first and last nodes:
+  SONAR_TIME0=t1son_arr[0]/TIME_NODE_MULT; //Initial time for sonar data in unix timestamp seconds
   firstSonNode = t1son_arr[0];
   firstCamNode = t1cam_arr[0];
   lastSonNode = t2son_arr[lengthSon-1];
@@ -383,6 +417,15 @@ int main(int argc, char** argv)
 	{
 	  cout << "xcam,ycam,zcam=" <<  xunit_arr[i] << "," << yunit_arr[i] << "," << zunit_arr[i] << endl;
 	  cout << "camera roll,pitch,yaw=" << roll_arr[i] << "," << pitch_arr[i] << "," << yaw_arr[i] << endl;
+	}
+
+      for(int i=0; i<lengthSon; i++)
+	{
+	  cout << "SonValid=" <<  estValid_son_arr[i] << endl;
+	}
+      for(int i=0; i<lengthCam; i++)
+	{
+	  cout << "CamValid=" << estValid_arr[i] << endl;
 	}
     }
 
