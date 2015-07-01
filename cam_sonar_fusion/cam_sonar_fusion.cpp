@@ -88,6 +88,7 @@ using namespace gtsam;
 #define SON_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau  _______
 #define CAM_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau /
 #define TIME_NODE_MULT 10 //Time to node number multiplier. ie t=0.1->node 1 if mult=10
+#define PRINT_UNIX_TIMES true //Print abs unix timestamps instead of zero-based node numbers
 
 int main(int argc, char** argv) 
 {
@@ -1099,7 +1100,12 @@ int main(int argc, char** argv)
 
 
   cout << 0 << " Result: x,y,yaw = " << result.at<Pose3>(0).x() << "," << result.at<Pose3>(0).y() << "," << result.at<Pose3>(0).rotation().yaw() << endl;
-  outfile << 0 << ";" << result.at<Pose3>(0).x() << ";" << result.at<Pose3>(0).y() << ";" << result.at<Pose3>(0).z() << ";" << result.at<Pose3>(0).rotation().roll() << ";" << result.at<Pose3>(0).rotation().pitch() << ";" << result.at<Pose3>(0).rotation().yaw() << ";";
+
+  if(PRINT_UNIX_TIMES)
+    outfile << SONAR_TIME0 << ";"; 
+  else
+    outfile << 0 << ";"; 
+  outfile << result.at<Pose3>(0).x() << ";" << result.at<Pose3>(0).y() << ";" << result.at<Pose3>(0).z() << ";" << result.at<Pose3>(0).rotation().roll() << ";" << result.at<Pose3>(0).rotation().pitch() << ";" << result.at<Pose3>(0).rotation().yaw() << ";";
   outfile << initial.at<Pose3>(0).x() << ";" << initial.at<Pose3>(0).y() << ";" << initial.at<Pose3>(0).z() << ";" << initial.at<Pose3>(0).rotation().roll() << ";" << initial.at<Pose3>(0).rotation().pitch() << ";" << initial.at<Pose3>(0).rotation().yaw() << ";";
 
   cout << 0 << " Son Result: x,y,yaw = " << resultSonOnly.at<Pose3>(0).x() << "," << resultSonOnly.at<Pose3>(0).y() << "," << resultSonOnly.at<Pose3>(0).rotation().yaw() << endl;
@@ -1176,7 +1182,11 @@ int main(int argc, char** argv)
 
       cout << nodeNum << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
       
-      outfile << nodeNum << ";" << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+      if(PRINT_UNIX_TIMES)
+	outfile << (nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
+      else
+	outfile << nodeNum << ";"; 
+      outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
       outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
 
       //-------------SonOnly-------------//
