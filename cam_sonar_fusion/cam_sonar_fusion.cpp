@@ -1231,7 +1231,7 @@ int main(int argc, char** argv)
       cout << nodeNum << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
       
       if(PRINT_UNIX_TIMES)
-	outfile << (nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
+	outfile << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
       else
 	outfile << nodeNum << ";"; 
       outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
