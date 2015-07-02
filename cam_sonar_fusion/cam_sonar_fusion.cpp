@@ -79,7 +79,7 @@
 using namespace std;
 using namespace gtsam;
 
-#define VERBOSE true
+#define VERBOSE false
 //#define CAM_CORNERS_WEIGHT 0.3333333
 //#define CAM_MATCHES_WEIGHT 0.3333333
 //#define CAM_INLIERS_WEIGHT 0.3333333
@@ -723,6 +723,7 @@ int main(int argc, char** argv)
 	    }
 
 	  // if(i != t2cam_arr[iCam2]) //If no corresponding camera node, use past data:
+	  bool sonarEnd = false;
 	  while(t2cam_arr[iCam2] <= t2son_arr[iSon2]) //Back calculate the sonar and camera nodes
 	    {
 	      double timeDiffCam = t2cam_arr[iCam2]-t1cam_arr[iCam2];
@@ -787,20 +788,37 @@ int main(int argc, char** argv)
 		}*/
 	      
 	      //Use previous sonar and camera data to get estimate of previous velocity magnitude
-	      if((xunit_camRobust == 0)&&(yunit_camRobust == 0)) //avoid div by zero
-		vel_mag = 1; //if unit vector only z (0,0,1) then give it a guess of 1 velocity in z direction
-	      else if(xunit_camRobust == 0)
-		vel_mag = abs(yvel_sonRobust/yunit_camRobust); //get extimate of VEL magnitude from x estimate. 
-	      else if(yunit_camRobust == 0)
-		vel_mag = abs(xvel_sonRobust/xunit_camRobust); //get extimate of VEL magnitude from y estimate. 
+	      double MIN_UNIT = 0.1; //min value for xunit,yunit to be considered for calculation of vel_mag
+	      if((abs(xunit_camRobust) < MIN_UNIT)&&(abs(yunit_camRobust) < MIN_UNIT)) //avoid div by zero
+		{
+		  vel_mag = (double)1/timeDiffSon; //if unit vector only z (0,0,1) then give it a guess of 1 velocity in z direction
+		  if(VERBOSE)
+		    cout << "vel_mag: can't use either x,y - setting at " << vel_mag << endl;
+		}
+	      else if(abs(xunit_camRobust) < MIN_UNIT)
+		{	
+		  vel_mag = abs(yvel_sonRobust/yunit_camRobust); //get extimate of VEL magnitude from x estimate. 
+		  if(VERBOSE)
+		    cout << "vel_mag: using y" << endl;
+		}
+	      else if(abs(yunit_camRobust) < MIN_UNIT)
+		{
+		  vel_mag = abs(xvel_sonRobust/xunit_camRobust); //get extimate of VEL magnitude from y estimate. 
+		  if(VERBOSE)
+		    cout << "vel_mag: using x" << endl;
+		}
 	      else
-		vel_mag = (abs(xvel_sonRobust/xunit_camRobust)+abs(yvel_sonRobust/yunit_camRobust))/2; //get extimate of VEL magnitude by averaging x and y estimates.
-	      
+		{
+		  vel_mag = (abs(xvel_sonRobust/xunit_camRobust)+abs(yvel_sonRobust/yunit_camRobust))/2; //get extimate of VEL magnitude by averaging x and y estimates.
+		  if(VERBOSE)
+		    cout << "vel_mag: using x AND y" << endl;
+		}
 	      zvel_sonRobust = vel_mag*zunit_camRobust; //...then multiply by unitz to get estimated z component corresponding to that unit vector.
 	      //prevSonNoiseTransl = sonNoiseTranslArr[iSonVel];
 	      
 	      if(VERBOSE)
 		{
+		  cout << "vel_mag componenents (x,y)= " << abs(xvel_sonRobust/xunit_camRobust) << "," << abs(yvel_sonRobust/yunit_camRobust) << endl;
 		  cout << "cam robust unit (x,y,z)=" << xunit_camRobust << "," << yunit_camRobust << "," << zunit_camRobust << endl;
 		  cout << "son robust vel (x,y,z,mag)=" << xvel_sonRobust << "," << yvel_sonRobust << "," << zvel_sonRobust << "," << vel_mag << endl;
 		}
@@ -867,8 +885,11 @@ int main(int argc, char** argv)
 	      //	      double timeDiffCam = t2cam_arr[iCam2]-t1cam_arr[iCam2];
 	      double totalEstShiftMag = vel_mag*timeDiffCam;
 	      if(VERBOSE)
-		cout << "totalEstShiftMag=" << totalEstShiftMag << endl;
-	      
+		{
+		  cout << "vel_mag=" << vel_mag << endl;
+		  cout << "timeDiffCam=" << timeDiffCam << endl;
+		  cout << "totalEstShiftMag=" << totalEstShiftMag << endl;
+		}
 	      //prev_x_cam = xunit_arr[iCam2]*totalEstShiftMag;  
 	      //prev_y_cam = yunit_arr[iCam2]*totalEstShiftMag;  
 	      //prev_z_cam = zunit_arr[iCam2]*totalEstShiftMag;  
@@ -934,13 +955,17 @@ int main(int argc, char** argv)
 	      //cout << iSon2 << "---" <<  iCam2 << endl;
 
 	      if(t2cam_arr[iCam2]==lastCamNode)
-		break;
+		{
+		  sonarEnd = true;
+		  break;
+		}
 	      else
 		iCam2++;
 	    }
 
-	  if(t2son_arr[iSon2]==lastSonNode)
-	    break;
+	  //Break if hit either last sonar OR camera nodes. Stop at first end.
+	  if((t2son_arr[iSon2]==lastSonNode)||sonarEnd)
+	    break; 
 	  
 	} //END IF SONAR NODE HERE
 
@@ -1378,7 +1403,8 @@ int main(int argc, char** argv)
       if(nodeNum==lastCamNode)
 	doneCam = true;
     }
-  while((!doneSon)||(!doneCam)); //do while not finished with BOTH files
+  // while((!doneSon)||(!doneCam)); //do while not finished with BOTH files
+  while((!doneSon)&&(!doneCam)); //do while not finished with files. Stop at first end.
     
   cout << "Initial Estimate Error (Fused): " <<  graph.error(initial) << endl;
   cout << "Result Error (Fused): " << graph.error(result) << endl;
