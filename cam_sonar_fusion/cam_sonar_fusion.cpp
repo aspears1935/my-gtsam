@@ -79,7 +79,7 @@
 using namespace std;
 using namespace gtsam;
 
-#define VERBOSE false
+#define VERBOSE true
 //#define CAM_CORNERS_WEIGHT 0.3333333
 //#define CAM_MATCHES_WEIGHT 0.3333333
 //#define CAM_INLIERS_WEIGHT 0.3333333
@@ -465,6 +465,8 @@ int main(int argc, char** argv)
   outfile << "covxson;covyson;covzson;covrollson;covpitchson;covyawson;";
   outfile << "covxcam;covycam;covzcam;covrollcam;covpitchcam;covyawcam;" << endl; 
 
+  ofstream outfileNoise("outputNoises.csv");
+  outfileNoise << "sonNoiseTransl;sonNoiseRot;camSonNoiseTransl;camNoiseRot;" << endl;
 
   // Create an empty nonlinear factor graph
   NonlinearFactorGraph graph;
@@ -697,6 +699,8 @@ int main(int argc, char** argv)
 	  //	  prev_sonNoiseTransl = sonNoiseTransl;
 	  //	  prev_sonNoiseRot = sonNoiseRot;
 
+	  outfileNoise << sonNoiseTransl << ";" << sonNoiseRot << ";";
+
 	  //NOTE: If make sonar noise 0.1, causes indeterminate solution! 
 	  //...Problem with yaw growing unbounded. For now, set to ZERO_NOISE!!! 
 	  noiseModel::Diagonal::shared_ptr constSonarNoise = noiseModel::Diagonal::Variances((Vector(6) << 0.01, 0.01, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
@@ -863,8 +867,13 @@ int main(int argc, char** argv)
 	      //  camNoiseMult *= 10; //AMS ADDED 6/17 - otherwise get bad result because bad cam data bleeding through. maybe need this for sonar too. Maybe change magnitude of both errors by 100 - maybe 10^camNoiseMult? Right now sonar is behaving, but maybe because only 0,0 for erronious nodes and not different direction.
 	      
 	      if(VERBOSE)
-		cout << "Cam Noise multipler=" << camNoiseMult << endl;
-	      
+		{
+		  cout << "Cam Noise multipler=" << camNoiseMult << endl;
+		  cout << "Cam Noise(transl,rot,camsontransl)=" << camNoiseTransl << "," << camNoiseRot << "," << camSonNoiseTransl << endl;
+		}
+
+	      outfileNoise << camSonNoiseTransl << ";" << camNoiseRot << ";" << endl; 
+
 	      noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, ZERO_NOISE/*camNoiseTransl*/, ZERO_NOISE/*camNoiseRot*/, camNoiseRot)); //4th (2nd from last) was ZERO_NOISE but changed.??
 	      
 	      noiseModel::Diagonal::shared_ptr constCameraNoise = noiseModel::Diagonal::Variances((Vector(5) << 0.1, 0.1, 0.1, 0.1, 0.1));//ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
@@ -923,7 +932,7 @@ int main(int argc, char** argv)
 	      cout << "Graph Node " << t1cam_arr[iCam2] << "-" << t2cam_arr[iCam2] << " - Cam (x,y,z,r,p,y): " << xunit_arr[iCam2]*totalEstShiftMag << "," << yunit_arr[iCam2]*totalEstShiftMag << "," << zunit_arr[iCam2]*totalEstShiftMag << "," << roll_arr[iCam2] << "," << pitch_arr[iCam2] << "," << yaw_arr[iCam2] << " - Noise (Transl, Rot): " << camSonNoiseTransl << "," << camNoiseRot << endl;
 	      
 	      //	      graphCamOnly.add(EssentialMatrixConstraint(t1cam_arr[iCam2], t2cam_arr[iCam2], EssentialMatrix(Rot3::ypr(yaw_arr[iCam2],pitch_arr[iCam2],roll_arr[iCam2]), Unit3(xunit_arr[iCam2],yunit_arr[iCam2],zunit_arr[iCam2])), cameraNoise));
-	      graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_arr[iCam2],pitch_arr[iCam2],roll_arr[iCam2]), Point3(xunit_arr[iCam2],yunit_arr[iCam2],zunit_arr[iCam2])), zeroNoise6));//cameraNoise6)); //Have to add this or else underconstrained
+	      graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_arr[iCam2],pitch_arr[iCam2],roll_arr[iCam2]), Point3(xunit_arr[iCam2],yunit_arr[iCam2],zunit_arr[iCam2])), cameraSonarNoise6));//zeroNoise6));//cameraNoise6)); //Have to add this or else underconstrained
 	      
 	      initialCam.insert(t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_sum_cam+addedErr,pitch_sum_cam+addedErr,roll_sum_cam+addedErr), Point3(x_sum_cam+addedErr,y_sum_cam+addedErr,z_sum_cam+addedErr)));
 	      //Below is for the fused estimates with sonar magnitudes
@@ -1418,5 +1427,6 @@ int main(int argc, char** argv)
   cout << "Result Error (Camera): " << graphCamOnly.error(resultCamOnly) << endl;
 
   outfile.close();
+  outfileNoise.close();
   return 0;
 }
