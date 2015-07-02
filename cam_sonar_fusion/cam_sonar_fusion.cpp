@@ -1,4 +1,5 @@
 //TODO: 
+//investigate the noise models. For now, camonly is set to ZERO_NOISE because it was causing it to not solve. Should test with simple inputs.
 //need to change size of x,y,z, arrays to actual size of frames from 256.
 //Need to change error model for camera - if missing sonar data, should continue at same speed in the cam direction.
 //Need to change the initial estimate array from length to max node because might skip some nodes
@@ -130,7 +131,8 @@ int main(int argc, char** argv)
   lengthSon = (int)(atoi(tmpstring.c_str()));
   cout << "lengthSon=" << lengthSon << endl;
   getline(inFileSon,tmpstring,'\n'); //Discard rest of line
-
+  if(VERBOSE)
+    cout << "Bad input data found, discarding: " << tmpstring << endl;
 
   getline(inFileCam,tmpstring,';'); //First line should just have length listed
   if(strcmp(tmpstring.c_str(),"length=")==0) //Found correct string
@@ -144,6 +146,8 @@ int main(int argc, char** argv)
   lengthCam = (int)(atoi(tmpstring.c_str()));
   cout << "lengthCam=" << lengthCam << endl;
   getline(inFileCam,tmpstring,'\n'); //Discard rest of line
+  if(VERBOSE)
+    cout << "Bad input data found, discarding: " << tmpstring << endl;
 
   //--------------Look for headings:----------------------//
   getline(inFileSon,tmpstring,';');
@@ -201,6 +205,8 @@ int main(int argc, char** argv)
     cout << "DIDN'T FIND ESTVALID HEADING! - " << tmpstring << endl;
 
   getline(inFileSon,tmpstring,'\n'); //Discard rest of line
+  if(VERBOSE)
+    cout << "Bad input data found, discarding: " << tmpstring << endl;
 
   //Read in camera input file headings:
   getline(inFileCam,tmpstring,';');
@@ -276,10 +282,12 @@ int main(int argc, char** argv)
     cout << "DIDN'T FIND ESTVALID HEADING! - " << tmpstring << endl;
 
   getline(inFileCam,tmpstring,'\n'); //Discard rest of line
+  if(VERBOSE)
+    cout << "Bad input data found, discarding: " << tmpstring << endl;
 
   //Create input data arrays:
-  float * t1son_arr;
-  float * t2son_arr;
+  int * t1son_arr;
+  int * t2son_arr;
   float * x_son_arr;
   float * y_son_arr;
   float * yaw_son_arr;
@@ -289,8 +297,8 @@ int main(int argc, char** argv)
   int * estValid_son_arr;
   //  double * sonNoiseTranslArr;
   //  sonNoiseTranslArr = new double[lengthSon];
-  t1son_arr = new float[lengthSon];
-  t2son_arr = new float[lengthSon];
+  t1son_arr = new int[lengthSon];
+  t2son_arr = new int[lengthSon];
   x_son_arr = new float[lengthSon];
   y_son_arr = new float[lengthSon];
   yaw_son_arr = new float[lengthSon];
@@ -299,8 +307,8 @@ int main(int argc, char** argv)
   numInliers_son_arr = new float[lengthSon];
   estValid_son_arr = new int[lengthSon];
 
-  float * t1cam_arr;
-  float * t2cam_arr;
+  int * t1cam_arr;
+  int * t2cam_arr;
   float * xunit_arr;
   float * yunit_arr;
   float * zunit_arr;
@@ -311,8 +319,8 @@ int main(int argc, char** argv)
   float * numMatches_arr;
   float * numInliers_arr;
   int * estValid_arr;
-  t1cam_arr = new float[lengthCam];
-  t2cam_arr = new float[lengthCam];
+  t1cam_arr = new int[lengthCam];
+  t2cam_arr = new int[lengthCam];
   xunit_arr = new float[lengthCam];
   yunit_arr = new float[lengthCam];
   zunit_arr = new float[lengthCam];
@@ -329,11 +337,9 @@ int main(int argc, char** argv)
     {
       //Sonar Data:
       getline(inFileSon,tmpstring,';');
-      t1son_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
+      t1son_arr[i] = round(TIME_NODE_MULT*(float)(atof(tmpstring.c_str())));
       getline(inFileSon,tmpstring,';');
-      t2son_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
-      if(VERBOSE)
-	cout << "son t1,t2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
+      t2son_arr[i] = round(TIME_NODE_MULT*(float)(atof(tmpstring.c_str())));
 
       getline(inFileSon,tmpstring,';');
       x_son_arr[i] = (float)(atof(tmpstring.c_str()));
@@ -353,6 +359,8 @@ int main(int argc, char** argv)
       estValid_son_arr[i] = (int)(atoi(tmpstring.c_str()));
 
       getline(inFileSon,tmpstring,'\n'); //Discard rest of line
+      if(VERBOSE)
+	cout << "Bad input data found, discarding: " << tmpstring << endl;
     }
 
   SONAR_TIME0=t1son_arr[0]/TIME_NODE_MULT; //Initial time for sonar data in unix timestamp seconds
@@ -360,15 +368,17 @@ int main(int argc, char** argv)
     {
       t1son_arr[i] = t1son_arr[i]-(SONAR_TIME0*TIME_NODE_MULT);
       t2son_arr[i] = t2son_arr[i]-(SONAR_TIME0*TIME_NODE_MULT);
+      if(VERBOSE)
+	cout << "son t1,t2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
     }
 
   for(int i=0; i<lengthCam; i++)
     {
       //Camera Data:
       getline(inFileCam,tmpstring,';');
-      t1cam_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
+      t1cam_arr[i] = round(TIME_NODE_MULT*(float)(atof(tmpstring.c_str())));
       getline(inFileCam,tmpstring,';');
-      t2cam_arr[i] = TIME_NODE_MULT*(float)(atof(tmpstring.c_str()));
+      t2cam_arr[i] = round(TIME_NODE_MULT*(float)(atof(tmpstring.c_str())));
       if(VERBOSE)
 	cout << "cam t1,t2 = " << t1cam_arr[i] << "," << t2cam_arr[i] << endl;
 
@@ -403,6 +413,8 @@ int main(int argc, char** argv)
       estValid_arr[i] = (int)(atoi(tmpstring.c_str()));
 
       getline(inFileCam,tmpstring,'\n'); //Discard rest of line
+      if(VERBOSE)
+	cout << "Bad input data found, discarding: " << tmpstring << endl;
     }    
 
   //Find the first and last nodes:
@@ -836,7 +848,7 @@ int main(int argc, char** argv)
 	      noiseModel::Diagonal::shared_ptr constCameraNoise = noiseModel::Diagonal::Variances((Vector(5) << 0.1, 0.1, 0.1, 0.1, 0.1));//ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
 	      
 	      noiseModel::Diagonal::shared_ptr cameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camNoiseTransl, camNoiseTransl, camNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
-	      
+
 	      noiseModel::Diagonal::shared_ptr cameraSonarNoise6 = noiseModel::Diagonal::Variances((Vector(6) << camSonNoiseTransl, camSonNoiseTransl, camSonNoiseTransl, camNoiseRot, camNoiseRot, camNoiseRot));
 	      
 	      noiseModel::Diagonal::shared_ptr constCameraNoise6 = noiseModel::Diagonal::Variances((Vector(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)); //ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE, ZERO_NOISE));
@@ -886,7 +898,7 @@ int main(int argc, char** argv)
 	      cout << "Graph Node " << t1cam_arr[iCam2] << "-" << t2cam_arr[iCam2] << " - Cam (x,y,z,r,p,y): " << xunit_arr[iCam2]*totalEstShiftMag << "," << yunit_arr[iCam2]*totalEstShiftMag << "," << zunit_arr[iCam2]*totalEstShiftMag << "," << roll_arr[iCam2] << "," << pitch_arr[iCam2] << "," << yaw_arr[iCam2] << " - Noise (Transl, Rot): " << camSonNoiseTransl << "," << camNoiseRot << endl;
 	      
 	      //	      graphCamOnly.add(EssentialMatrixConstraint(t1cam_arr[iCam2], t2cam_arr[iCam2], EssentialMatrix(Rot3::ypr(yaw_arr[iCam2],pitch_arr[iCam2],roll_arr[iCam2]), Unit3(xunit_arr[iCam2],yunit_arr[iCam2],zunit_arr[iCam2])), cameraNoise));
-	      graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_arr[iCam2],pitch_arr[iCam2],roll_arr[iCam2]), Point3(xunit_arr[iCam2],yunit_arr[iCam2],zunit_arr[iCam2])), cameraNoise6)); //Have to add this or else underconstrained
+	      graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_arr[iCam2],pitch_arr[iCam2],roll_arr[iCam2]), Point3(xunit_arr[iCam2],yunit_arr[iCam2],zunit_arr[iCam2])), zeroNoise6));//cameraNoise6)); //Have to add this or else underconstrained
 	      
 	      initialCam.insert(t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_sum_cam+addedErr,pitch_sum_cam+addedErr,roll_sum_cam+addedErr), Point3(x_sum_cam+addedErr,y_sum_cam+addedErr,z_sum_cam+addedErr)));
 	      //Below is for the fused estimates with sonar magnitudes
@@ -934,15 +946,16 @@ int main(int argc, char** argv)
       //if(i == t2cam_arr[iCam2]) 
       //	iCam2++;
 
-      cout << "--------------------------------------------" << endl;
+
     }
   
   //  graphSonOnly.print();
   //  initialSon.print();
 
-  //graphCamOnly.print();
-  cout << "initialCamSon=" << endl;
-  initialCamSon.print();
+  cout << "graphCamOnly=" << endl;
+  graphCamOnly.print();
+  cout << "initialCam=" << endl;
+  initialCam.print();
 
   /********************Create Fused Initial Guess*******************/
   /*  int iSon1 = 0;
