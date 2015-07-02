@@ -234,12 +234,12 @@ int main(int argc, char** argv)
     }
   */
 
-  for(i=0; i<20; i++)
+  for(i=0; i<10; i++)
     {
       /*      if(i<10)
 	graph.add(BetweenFactor<Pose3>(i, i+1, Pose3(Rot3::ypr(0,0,0), Point3(1,0,0)), constSonarNoise1));
 	else*/
-	graph.add(BetweenFactor<Pose3>(i, i+1, Pose3(Rot3::ypr(0,0,0), Point3(1,1,0)), constSonarNoise2));
+	graph.add(BetweenFactor<Pose3>(2*i, 2*i+2, Pose3(Rot3::ypr(0,0,0), Point3(2,0,0)), constSonarNoise1));
     }
   
 
@@ -284,7 +284,7 @@ int main(int argc, char** argv)
       for(i=0; i< 20; i++)
 	{
 	  //graph.add(EssentialMatrixConstraint(i, i+1, EssentialMatrix(Rot3::ypr(0,0,0), Unit3(1,0,0)), cameraNoise));
-	  graph.add(BetweenFactor<Pose3>(i, i+1, Pose3(Rot3::ypr(0,0,0), Point3(3,5,0)), constCameraNoise6_5));
+	  graph.add(BetweenFactor<Pose3>(i, i+1, Pose3(Rot3::ypr(0,0,0), Point3(1,1,0)), constCameraNoise6_1));
 
 	  graphCamOnly.add(EssentialMatrixConstraint(i, i+1, EssentialMatrix(Rot3::ypr(0,0,0), Unit3(1,0,0)), cameraNoise));
 	  graphCamOnly.add(BetweenFactor<Pose3>(i, i+1, Pose3(Rot3::ypr(0,0,0), Point3(1,0,0)), cameraNoise6)); //Have to add this or else underconstrained
