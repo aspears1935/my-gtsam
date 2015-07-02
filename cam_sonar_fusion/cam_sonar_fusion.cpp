@@ -79,7 +79,7 @@
 using namespace std;
 using namespace gtsam;
 
-#define VERBOSE false
+#define VERBOSE true
 //#define CAM_CORNERS_WEIGHT 0.3333333
 //#define CAM_MATCHES_WEIGHT 0.3333333
 //#define CAM_INLIERS_WEIGHT 0.3333333
@@ -389,10 +389,14 @@ int main(int argc, char** argv)
       getline(inFileCam,tmpstring,';');
       zunit_arr[i] = (float)(atof(tmpstring.c_str()));
       //Convert to unit vector if not
+      //      cout << "x,y,z unit: " << xunit_arr[i] << "," << yunit_arr[i] << "," << zunit_arr[i] << endl;
       double unit_mag = sqrt(xunit_arr[i]*xunit_arr[i]+yunit_arr[i]*yunit_arr[i]+zunit_arr[i]*zunit_arr[i]);
-      xunit_arr[i] = xunit_arr[i]/unit_mag;
-      yunit_arr[i] = yunit_arr[i]/unit_mag;
-      zunit_arr[i] = zunit_arr[i]/unit_mag;
+      if(unit_mag!=0)
+	{
+	  xunit_arr[i] = xunit_arr[i]/unit_mag;
+	  yunit_arr[i] = yunit_arr[i]/unit_mag;
+	  zunit_arr[i] = zunit_arr[i]/unit_mag;
+	}
 
       //Convert from degrees to radians:
       getline(inFileCam,tmpstring,';');
