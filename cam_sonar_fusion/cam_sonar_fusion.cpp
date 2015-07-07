@@ -89,7 +89,7 @@ using namespace gtsam;
 #define SON_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau  _______
 #define CAM_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau /
 #define TIME_NODE_MULT 100 //Time to node number multiplier. ie t=0.1->node 1 if mult=10
-#define PRINT_UNIX_TIMES true //Print abs unix timestamps instead of zero-based node numbers
+#define PRINT_UNIX_TIMES false //Print abs unix timestamps instead of zero-based node numbers
 
 int main(int argc, char** argv) 
 {
@@ -100,6 +100,9 @@ int main(int argc, char** argv)
 
   double SONAR_TIME0;
   
+  //  cout << fixed;
+  //cout << defaultfloat;
+
   if(argc < 3)
     {
       cout << "Not Enough Args. Usage: ./gtsam <sonar input CSV file with x,y,theta> <camera input CSV file with x,y,z,roll,pitch,yaw>" << endl << "Example: ./gtsam soninput.csv caminput.csv" << endl;
@@ -332,15 +335,18 @@ int main(int argc, char** argv)
   numInliers_arr = new float[lengthCam];
   estValid_arr = new int[lengthCam];
 
+  cout.precision(12); 
+
   //Read in the input data:
   for(int i=0; i<lengthSon; i++)
     {
       //Sonar Data:
       getline(inFileSon,tmpstring,';');
       t1son_arr[i] = round(TIME_NODE_MULT*(double)(atof(tmpstring.c_str())));
-      cout << t1son_arr[i] << endl;
       getline(inFileSon,tmpstring,';');
       t2son_arr[i] = round(TIME_NODE_MULT*(double)(atof(tmpstring.c_str())));
+      if(VERBOSE)
+	cout << "son t1,t2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
 
       getline(inFileSon,tmpstring,';');
       x_son_arr[i] = (float)(atof(tmpstring.c_str()));
@@ -363,6 +369,7 @@ int main(int argc, char** argv)
       if(VERBOSE)
 	cout << "Bad input data found, discarding: " << tmpstring << endl;
     }
+  //cout.precision(2); 
 
   SONAR_TIME0=t1son_arr[0]/TIME_NODE_MULT; //Initial time for sonar data in unix timestamp seconds
   for(int i=0; i<lengthSon; i++) //Subtract out the SONAR_TIME0 from all nodes
@@ -370,7 +377,7 @@ int main(int argc, char** argv)
       t1son_arr[i] = t1son_arr[i]-(SONAR_TIME0*TIME_NODE_MULT);
       t2son_arr[i] = t2son_arr[i]-(SONAR_TIME0*TIME_NODE_MULT);
       if(VERBOSE)
-	cout << "son t1,t2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
+	cout << "son n1,n2 = " << t1son_arr[i] << "," << t2son_arr[i] << endl;
     }
 
   for(int i=0; i<lengthCam; i++)
@@ -967,6 +974,7 @@ int main(int argc, char** argv)
 	      if(t2cam_arr[iCam2]==lastCamNode)
 		{
 		  sonarEnd = true;
+		  cout << "Hit Last Camera Node!!" << endl;
 		  break;
 		}
 	      else
@@ -975,7 +983,10 @@ int main(int argc, char** argv)
 
 	  //Break if hit either last sonar OR camera nodes. Stop at first end.
 	  if((t2son_arr[iSon2]==lastSonNode)||sonarEnd)
-	    break; 
+	    {
+	      cout << "Hit Last Sonar (or Camera) Node!!" << endl;
+	      break; 
+	    }
 	  
 	} //END IF SONAR NODE HERE
 
@@ -1444,9 +1455,17 @@ int main(int argc, char** argv)
       
       //set done flags if needed:
       if(nodeNum==lastSonNode)
-	doneSon = true;
+	{
+	  doneSon = true;
+	  if(VERBOSE)
+	    cout << "Hit Last Sonar Node!!" << endl;
+	}
       if(nodeNum==lastCamNode)
-	doneCam = true;
+	{
+	  doneCam = true;
+	  if(VERBOSE)
+	    cout << "Hit Last Camera Node!!" << endl;
+	}
     }
   // while((!doneSon)||(!doneCam)); //do while not finished with BOTH files
   while((!doneSon)&&(!doneCam)); //do while not finished with files. Stop at first end.
