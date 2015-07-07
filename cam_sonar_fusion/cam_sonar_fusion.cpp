@@ -286,8 +286,8 @@ int main(int argc, char** argv)
     cout << "Bad input data found, discarding: " << tmpstring << endl;
 
   //Create input data arrays:
-  int * t1son_arr;
-  int * t2son_arr;
+  double * t1son_arr;
+  double * t2son_arr;
   float * x_son_arr;
   float * y_son_arr;
   float * yaw_son_arr;
@@ -297,8 +297,8 @@ int main(int argc, char** argv)
   int * estValid_son_arr;
   //  double * sonNoiseTranslArr;
   //  sonNoiseTranslArr = new double[lengthSon];
-  t1son_arr = new int[lengthSon];
-  t2son_arr = new int[lengthSon];
+  t1son_arr = new double[lengthSon];
+  t2son_arr = new double[lengthSon];
   x_son_arr = new float[lengthSon];
   y_son_arr = new float[lengthSon];
   yaw_son_arr = new float[lengthSon];
@@ -307,8 +307,8 @@ int main(int argc, char** argv)
   numInliers_son_arr = new float[lengthSon];
   estValid_son_arr = new int[lengthSon];
 
-  int * t1cam_arr;
-  int * t2cam_arr;
+  double * t1cam_arr;
+  double * t2cam_arr;
   float * xunit_arr;
   float * yunit_arr;
   float * zunit_arr;
@@ -319,8 +319,8 @@ int main(int argc, char** argv)
   float * numMatches_arr;
   float * numInliers_arr;
   int * estValid_arr;
-  t1cam_arr = new int[lengthCam];
-  t2cam_arr = new int[lengthCam];
+  t1cam_arr = new double[lengthCam];
+  t2cam_arr = new double[lengthCam];
   xunit_arr = new float[lengthCam];
   yunit_arr = new float[lengthCam];
   zunit_arr = new float[lengthCam];
@@ -337,9 +337,10 @@ int main(int argc, char** argv)
     {
       //Sonar Data:
       getline(inFileSon,tmpstring,';');
-      t1son_arr[i] = round(TIME_NODE_MULT*(float)(atof(tmpstring.c_str())));
+      t1son_arr[i] = round(TIME_NODE_MULT*(double)(atof(tmpstring.c_str())));
+      cout << t1son_arr[i] << endl;
       getline(inFileSon,tmpstring,';');
-      t2son_arr[i] = round(TIME_NODE_MULT*(float)(atof(tmpstring.c_str())));
+      t2son_arr[i] = round(TIME_NODE_MULT*(double)(atof(tmpstring.c_str())));
 
       getline(inFileSon,tmpstring,';');
       x_son_arr[i] = (float)(atof(tmpstring.c_str()));
@@ -376,9 +377,9 @@ int main(int argc, char** argv)
     {
       //Camera Data:
       getline(inFileCam,tmpstring,';');
-      t1cam_arr[i] = round(TIME_NODE_MULT*(float)(atof(tmpstring.c_str())));
+      t1cam_arr[i] = round(TIME_NODE_MULT*(double)(atof(tmpstring.c_str())));
       getline(inFileCam,tmpstring,';');
-      t2cam_arr[i] = round(TIME_NODE_MULT*(float)(atof(tmpstring.c_str())));
+      t2cam_arr[i] = round(TIME_NODE_MULT*(double)(atof(tmpstring.c_str())));
       if(VERBOSE)
 	cout << "cam t1,t2 = " << t1cam_arr[i] << "," << t2cam_arr[i] << endl;
 
@@ -1182,6 +1183,20 @@ int main(int argc, char** argv)
   do  //do while not finished with BOTH files
     {
       int nodeNum;
+
+      double xprint;
+      double yprint;
+      double zprint;
+      double rollprint;
+      double pitchprint;
+      double yawprint;
+      double xinitprint;
+      double yinitprint;
+      double zinitprint;
+      double rollinitprint;
+      double pitchinitprint;
+      double yawinitprint;
+
       if((!doneSon)&&(!doneCam)) //Both files still have data
 	nodeNum = min(t2son_arr[iSon],t2cam_arr[iCam]); // Get the next node. It will be the minimum of the next son and cam values.
       else if(doneSon)
@@ -1196,55 +1211,70 @@ int main(int argc, char** argv)
 
       cout << "Node " << nodeNum << endl;
 
-      double xprint = result.at<Pose3>(nodeNum).x();
-      double yprint = result.at<Pose3>(nodeNum).y();
-      double zprint = result.at<Pose3>(nodeNum).z();
-      double rollprint = result.at<Pose3>(nodeNum).rotation().roll();
-      double pitchprint = result.at<Pose3>(nodeNum).rotation().pitch();
-      double yawprint = result.at<Pose3>(nodeNum).rotation().yaw();
-
-      //Initial Guess: 
-      double xinitprint = initial.at<Pose3>(nodeNum).x();
-      double yinitprint = initial.at<Pose3>(nodeNum).y();
-      double zinitprint = initial.at<Pose3>(nodeNum).z();
-      double rollinitprint = initial.at<Pose3>(nodeNum).rotation().roll();
-      double pitchinitprint = initial.at<Pose3>(nodeNum).rotation().pitch();
-      double yawinitprint = initial.at<Pose3>(nodeNum).rotation().yaw();
-
-      if(abs(xprint) < 0.001)
-	xprint = 0;
-      if(abs(yprint) < 0.001)
-	yprint = 0;
-      if(abs(zprint) < 0.001)
-	zprint = 0;
-      if(abs(rollprint) < 0.001)
-	rollprint = 0;
-      if(abs(pitchprint) < 0.001)
-	pitchprint = 0;
-      if(abs(yawprint) < 0.001)
-	yawprint = 0;
-
-      if(abs(xinitprint) < 0.001)
-	xinitprint = 0;
-      if(abs(yinitprint) < 0.001)
-	yinitprint = 0;
-      if(abs(zinitprint) < 0.001)
-	zinitprint = 0;
-      if(abs(rollinitprint) < 0.001)
-	rollinitprint = 0;
-      if(abs(pitchinitprint) < 0.001)
-	pitchinitprint = 0;
-      if(abs(yawinitprint) < 0.001)
-	yawinitprint = 0;
-
-      cout << nodeNum << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
-      
-      if(PRINT_UNIX_TIMES)
-	outfile << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
+      //-------------Fused----------------//
+      if(t2cam_arr[iCam]==nodeNum)
+	{
+	  xprint = result.at<Pose3>(nodeNum).x();
+	  yprint = result.at<Pose3>(nodeNum).y();
+	  zprint = result.at<Pose3>(nodeNum).z();
+	  rollprint = result.at<Pose3>(nodeNum).rotation().roll();
+	  pitchprint = result.at<Pose3>(nodeNum).rotation().pitch();
+	  yawprint = result.at<Pose3>(nodeNum).rotation().yaw();
+	  
+	  //Initial Guess: 
+	  xinitprint = initial.at<Pose3>(nodeNum).x();
+	  yinitprint = initial.at<Pose3>(nodeNum).y();
+	  zinitprint = initial.at<Pose3>(nodeNum).z();
+	  rollinitprint = initial.at<Pose3>(nodeNum).rotation().roll();
+	  pitchinitprint = initial.at<Pose3>(nodeNum).rotation().pitch();
+	  yawinitprint = initial.at<Pose3>(nodeNum).rotation().yaw();
+	  
+	  if(abs(xprint) < 0.001)
+	    xprint = 0;
+	  if(abs(yprint) < 0.001)
+	    yprint = 0;
+	  if(abs(zprint) < 0.001)
+	    zprint = 0;
+	  if(abs(rollprint) < 0.001)
+	    rollprint = 0;
+	  if(abs(pitchprint) < 0.001)
+	    pitchprint = 0;
+	  if(abs(yawprint) < 0.001)
+	    yawprint = 0;
+	  
+	  if(abs(xinitprint) < 0.001)
+	    xinitprint = 0;
+	  if(abs(yinitprint) < 0.001)
+	    yinitprint = 0;
+	  if(abs(zinitprint) < 0.001)
+	    zinitprint = 0;
+	  if(abs(rollinitprint) < 0.001)
+	    rollinitprint = 0;
+	  if(abs(pitchinitprint) < 0.001)
+	    pitchinitprint = 0;
+	  if(abs(yawinitprint) < 0.001)
+	    yawinitprint = 0;
+	  
+	  cout << nodeNum << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
+	  
+	  if(PRINT_UNIX_TIMES)
+	    outfile << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
+	  else
+	    outfile << nodeNum << ";"; 
+	  
+	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+	  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
+	}
       else
-	outfile << nodeNum << ";"; 
-      outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
-      outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
+	{
+	  if(PRINT_UNIX_TIMES)
+	    outfile << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
+	  else
+	    outfile << nodeNum << ";"; 
+	  
+	  outfile << ";;;;;;";
+	  outfile << ";;;;;;";
+	}
 
       //-------------SonOnly-------------//
       if(t2son_arr[iSon]==nodeNum)
@@ -1359,17 +1389,23 @@ int main(int argc, char** argv)
       cout.precision(2); 
       //cout << "x" << i << " covariance:\n" << marginals.marginalCovariance(i) << endl;
 
-      cout << "X" << nodeNum << " covariance: ";
-      for(int i1=0;i1<6;i1++)
+      if(t2cam_arr[iCam]==nodeNum)
 	{
-	  cout << marginals.marginalCovariance(nodeNum)(i1,i1) << ",";
-	  outfile << marginals.marginalCovariance(nodeNum)(i1,i1) << ";";
+	  cout << "X" << nodeNum << " covariance: ";
+	  for(int i1=0;i1<6;i1++)
+	    {
+	      cout << marginals.marginalCovariance(nodeNum)(i1,i1) << ",";
+	      outfile << marginals.marginalCovariance(nodeNum)(i1,i1) << ";";
+	    }
+	  cout << endl;
 	}
-      cout << endl;
-
+      else
+	{
+	  outfile << ";;;;;;";
+	}
       //------------SonOnly--------------//
       //      if(t2son_arr[iSon]==nodeNum)
-      if(!doneSon)	
+      if((!doneSon)&&(t2son_arr[iSon]==nodeNum))
 	{
 	  cout << "X" << nodeNum << " Son covariance: ";
 	  for(int i1=0;i1<6;i1++)
@@ -1385,7 +1421,7 @@ int main(int argc, char** argv)
 
       //------------VidOnly------------//
       //      if(t2cam_arr[iCam]==nodeNum)
-      if(!doneCam)	
+      if((!doneCam)&&(t2cam_arr[iCam]==nodeNum))
 	{
 	  cout << "X" << nodeNum << " Cam covariance: ";
 	  for(int i1=0;i1<6;i1++)
@@ -1419,11 +1455,11 @@ int main(int argc, char** argv)
   cout << "Result Error (Fused): " << graph.error(result) << endl;
 
   //--------------------- Son Only -----------------------//
-  cout << "Initial Estimate Error (Sonar): " <<  graphSonOnly.error(initial) << endl;
+  cout << "Initial Estimate Error (Sonar): " <<  graphSonOnly.error(initialSon) << endl;
   cout << "Result Error (Sonar): " << graphSonOnly.error(resultSonOnly) << endl;
 
   //--------------------- Cam Only -----------------------//
-  cout << "Initial Estimate Error (Camera): " <<  graphCamOnly.error(initial) << endl;
+  cout << "Initial Estimate Error (Camera): " <<  graphCamOnly.error(initialCam) << endl;
   cout << "Result Error (Camera): " << graphCamOnly.error(resultCamOnly) << endl;
 
   outfile.close();
