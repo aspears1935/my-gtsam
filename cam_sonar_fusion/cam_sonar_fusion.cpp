@@ -473,7 +473,7 @@ int main(int argc, char** argv)
   outfile << "covxson;covyson;covzson;covrollson;covpitchson;covyawson;";
   outfile << "covxcam;covycam;covzcam;covrollcam;covpitchcam;covyawcam;" << endl; 
 
-  ofstream outfilexls("outputGTSAM.xlsx");
+  ofstream outfilexls("outputGTSAM.xls");
   outfilexls << "frame/time?\tx\ty\tr\toll\tpitch\tyaw\t";
   outfilexls << "xInit\tyInit\tzInit\trollInit\tpitchInit\tyawInit\t";
   outfilexls << "xson\tyson\tzson\trollson\tpitchson\tyawson\t";
