@@ -471,10 +471,11 @@ int main(int argc, char** argv)
   outfile << "xcamSum;ycamSum;zcamSum;rollcamSum;pitchcamSum;yawcamSum;";
   outfile << "covx;covy;covz;covroll;covpitch;covyaw;";
   outfile << "covxson;covyson;covzson;covrollson;covpitchson;covyawson;";
-  outfile << "covxcam;covycam;covzcam;covrollcam;covpitchcam;covyawcam;" << endl; 
+  outfile << "covxcam;covycam;covzcam;covrollcam;covpitchcam;covyawcam;" << endl;
+  //outfile << "noiseTranslSon;noiseRotSon;noiseTranslCam;noiseRotCam;" << endl; 
 
   ofstream outfilexls("outputGTSAM.xls");
-  outfilexls << "frame/time?\tx\ty\tr\toll\tpitch\tyaw\t";
+  outfilexls << "frame/time?\tx\ty\tz\troll\tpitch\tyaw\t";
   outfilexls << "xInit\tyInit\tzInit\trollInit\tpitchInit\tyawInit\t";
   outfilexls << "xson\tyson\tzson\trollson\tpitchson\tyawson\t";
   outfilexls << "xsonSum\tysonSum\tzsonSum\trollsonSum\tpitchsonSum\tyawsonSum\t";
@@ -483,9 +484,10 @@ int main(int argc, char** argv)
   outfilexls << "covx\tcovy\tcovz\tcovroll\tcovpitch\tcovyaw\t";
   outfilexls << "covxson\tcovyson\tcovzson\tcovrollson\tcovpitchson\tcovyawson\t";
   outfilexls << "covxcam\tcovycam\tcovzcam\tcovrollcam\tcovpitchcam\tcovyawcam\t" << endl; 
+  //  outfilexls << "noiseTranslSon\tnoiseRotSon\tnoiseTranslCam\tnoiseRotCam" << endl; 
 
   ofstream outfileNoise("outputNoises.csv");
-  outfileNoise << "sonNoiseTransl;sonNoiseRot;camSonNoiseTransl;camNoiseRot;" << endl;
+  outfileNoise << "camNoiseTransl;camNoiseRot;sonSonNoiseTransl;sonNoiseRot;" << endl;
 
   // Create an empty nonlinear factor graph
   NonlinearFactorGraph graph;
@@ -575,6 +577,8 @@ int main(int argc, char** argv)
   //  double prev_vel_mag_sonRobust = sqrt(prev_xvel_sonRobust*prev_xvel_sonRobust + prev_yvel_sonRobust*prev_yvel_sonRobust);
   double sonNoiseTranslRobust = 0.0001;
   double sonNoiseRotRobust = 0.00001;
+  double sonNoiseTransl = 0.0001;
+  double sonNoiseRot = 0.00001;
   double x_sum_son = 0;
   double y_sum_son = 0;
   double yaw_sum_son = 0;
@@ -599,6 +603,9 @@ int main(int argc, char** argv)
   double y_sum_camSon = 0;
   double z_sum_camSon = 0;  
   double timeDiffSon = 0;
+  double camNoiseTransl = 0.0001;
+  double camNoiseRot = 0.00001;
+  double camSonNoiseTransl = 0.0001;
 
   //initialize velocities from first sonar data:
   //  double prev_velx = x_son_arr[0]/(t2son_arr[0]-t1son_arr[0]);
@@ -685,9 +692,9 @@ int main(int argc, char** argv)
 
 	  if(VERBOSE)
 	    cout << "Son Noise multipler=" << sonNoiseMult << endl;
-	  double sonNoiseTransl = 0.01*sonNoiseMult; //allInliers=>0.0001m, noInliers=>0.01m
+	  sonNoiseTransl = 0.01*sonNoiseMult; //allInliers=>0.0001m, noInliers=>0.01m
 	  //double sonNoiseTransl = 10*sonNoiseMult; //allInliers=>0.1m, noInliers=>10m
-	  double sonNoiseRot = 0.001*sonNoiseMult; //allInliers=>0.00001rad, noInliers=>0.001 deg
+	  sonNoiseRot = 0.001*sonNoiseMult; //allInliers=>0.00001rad, noInliers=>0.001 deg
 	  //double sonNoiseRot = 10*sonNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
 	  //	  double sonFuseNoiseTransl = sonNoiseMult*100*sonNoiseTransl; //*sonNoiseMult*100 to reduce effect 
 	  //double sonFuseNoiseRot = sonNoiseMult*100*sonNoiseRot; //*sonNoiseMult*100 to reduce effect 
@@ -718,7 +725,6 @@ int main(int argc, char** argv)
 	  //	  prev_sonNoiseTransl = sonNoiseTransl;
 	  //	  prev_sonNoiseRot = sonNoiseRot;
 
-	  outfileNoise << sonNoiseTransl << ";" << sonNoiseRot << ";";
 
 	  //NOTE: If make sonar noise 0.1, causes indeterminate solution! 
 	  //...Problem with yaw growing unbounded. For now, set to ZERO_NOISE!!! 
@@ -874,14 +880,14 @@ int main(int argc, char** argv)
 	      
 	      //double camNoiseTransl = camNoiseMult; //allInliers=>0.01 , noInliers=>1. transl is a unit vector
 	      //      double camNoiseTransl = 10*camNoiseMult; //allInliers=>0.1 , noInliers=>10. transl is a unit vector
-	      double camNoiseTransl = 0.01*camNoiseMult; //allInliers=>0.0001 , noInliers=>0.01. transl is a unit vector
+	      camNoiseTransl = 0.01*camNoiseMult; //allInliers=>0.0001 , noInliers=>0.01. transl is a unit vector
 	      if((numInliers_arr[iCam2] < CAM_INLIERS_THRESH)||(estValid_arr[iCam2]!=1))
 		camNoiseTransl*=100; //1000
-	      double camNoiseRot = 0.001*camNoiseMult; //allInliers=>0.00001deg, noInliers=>0.001 deg
+	      camNoiseRot = 0.001*camNoiseMult; //allInliers=>0.00001deg, noInliers=>0.001 deg
 	      //if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH)
 		//	camNoiseRot*=1; //100
 	      //double camNoiseRot = 10*camNoiseMult; //allInliers=>0.1deg, noInliers=>10deg
-	      double camSonNoiseTransl = /*camNoiseMult*100**/sqrt(sonNoiseTranslRobust*camNoiseTransl); //Geometric Mean * camNoiseMult*100 to reduce effect 
+	      camSonNoiseTransl = /*camNoiseMult*100**/sqrt(sonNoiseTranslRobust*camNoiseTransl); //Geometric Mean * camNoiseMult*100 to reduce effect 
 	      //	  if(numInliers_arr[iCam2] < CAM_INLIERS_THRESH)
 	      //  camNoiseMult *= 10; //AMS ADDED 6/17 - otherwise get bad result because bad cam data bleeding through. maybe need this for sonar too. Maybe change magnitude of both errors by 100 - maybe 10^camNoiseMult? Right now sonar is behaving, but maybe because only 0,0 for erronious nodes and not different direction.
 	      
@@ -891,7 +897,7 @@ int main(int argc, char** argv)
 		  cout << "Cam Noise(transl,rot,camsontransl)=" << camNoiseTransl << "," << camNoiseRot << "," << camSonNoiseTransl << endl;
 		}
 
-	      outfileNoise << camSonNoiseTransl << ";" << camNoiseRot << ";" << endl; 
+
 
 	      noiseModel::Diagonal::shared_ptr cameraNoise = noiseModel::Diagonal::Variances((Vector(5) << camNoiseTransl, camNoiseTransl, ZERO_NOISE/*camNoiseTransl*/, ZERO_NOISE/*camNoiseRot*/, camNoiseRot)); //4th (2nd from last) was ZERO_NOISE but changed.??
 	      
@@ -949,7 +955,7 @@ int main(int argc, char** argv)
 	      graph.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_arr[iCam2],pitch_arr[iCam2],roll_arr[iCam2]), Point3(xunit_arr[iCam2]*totalEstShiftMag,yunit_arr[iCam2]*totalEstShiftMag,zunit_arr[iCam2]*totalEstShiftMag)), cameraSonarNoise6)); //Have to add this or else underconstrained     
 	  //      if(VERBOSE)
 	      cout << "Graph Node " << t1cam_arr[iCam2] << "-" << t2cam_arr[iCam2] << " - Cam (x,y,z,r,p,y): " << xunit_arr[iCam2]*totalEstShiftMag << "," << yunit_arr[iCam2]*totalEstShiftMag << "," << zunit_arr[iCam2]*totalEstShiftMag << "," << roll_arr[iCam2] << "," << pitch_arr[iCam2] << "," << yaw_arr[iCam2] << " - Noise (Transl, Rot): " << camSonNoiseTransl << "," << camNoiseRot << endl;
-	      
+	      outfileNoise << camSonNoiseTransl << ";" << camNoiseRot << ";";	      
 	      //	      graphCamOnly.add(EssentialMatrixConstraint(t1cam_arr[iCam2], t2cam_arr[iCam2], EssentialMatrix(Rot3::ypr(yaw_arr[iCam2],pitch_arr[iCam2],roll_arr[iCam2]), Unit3(xunit_arr[iCam2],yunit_arr[iCam2],zunit_arr[iCam2])), cameraNoise));
 	      graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_arr[iCam2],pitch_arr[iCam2],roll_arr[iCam2]), Point3(xunit_arr[iCam2],yunit_arr[iCam2],zunit_arr[iCam2])), cameraSonarNoise6));//zeroNoise6));//cameraNoise6)); //Have to add this or else underconstrained
 	      
@@ -979,6 +985,7 @@ int main(int argc, char** argv)
 	      //Add Sonar Node
 	      graph.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(yawvel_son*timeDiffCam,0,0), Point3(xvel_son*timeDiffCam,yvel_son*timeDiffCam,0)), sonarNoise));
 	      cout << "Graph Node " << t1cam_arr[iCam2] << "-" << t2cam_arr[iCam2]  << " - Son (x,y,yaw):     " << xvel_son*timeDiffCam << "," << yvel_son*timeDiffCam << "," << yawvel_son*timeDiffCam << "       - Noise (Transl, Rot): " << sonNoiseTransl << "," << sonNoiseRot << endl;
+	      outfileNoise << sonNoiseTransl << ";" << sonNoiseRot << ";" << endl;
 
 	      //cout << iSon2 << "---" <<  iCam2 << endl;
 
