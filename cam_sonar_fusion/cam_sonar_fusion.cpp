@@ -127,7 +127,7 @@ int main(int argc, char** argv)
     cout << "Found length" << endl;
   else
     {
-      cout << "Couldn't find length." << endl;
+      cout << "Couldn't find son length." << endl;
       return 0;
     }
   getline(inFileSon,tmpstring,';'); //First line should just have length listed
@@ -142,7 +142,7 @@ int main(int argc, char** argv)
     cout << "Found length" << endl;
   else
     {
-      cout << "Couldn't find length." << endl;
+      cout << "Couldn't find cam length." << endl;
       return 0;
     }
   getline(inFileCam,tmpstring,';'); //First line should just have length listed
@@ -472,6 +472,17 @@ int main(int argc, char** argv)
   outfile << "covx;covy;covz;covroll;covpitch;covyaw;";
   outfile << "covxson;covyson;covzson;covrollson;covpitchson;covyawson;";
   outfile << "covxcam;covycam;covzcam;covrollcam;covpitchcam;covyawcam;" << endl; 
+
+  ofstream outfilexls("outputGTSAM.xlsx");
+  outfilexls << "frame/time?\tx\ty\tr\toll\tpitch\tyaw\t";
+  outfilexls << "xInit\tyInit\tzInit\trollInit\tpitchInit\tyawInit\t";
+  outfilexls << "xson\tyson\tzson\trollson\tpitchson\tyawson\t";
+  outfilexls << "xsonSum\tysonSum\tzsonSum\trollsonSum\tpitchsonSum\tyawsonSum\t";
+  outfilexls << "xcam\tycam\tzcam\trollcam\tpitchcam\tyawcam\t";
+  outfilexls << "xcamSum\tycamSum\tzcamSum\trollcamSum\tpitchcamSum\tyawcamSum\t";
+  outfilexls << "covx\tcovy\tcovz\tcovroll\tcovpitch\tcovyaw\t";
+  outfilexls << "covxson\tcovyson\tcovzson\tcovrollson\tcovpitchson\tcovyawson\t";
+  outfilexls << "covxcam\tcovycam\tcovzcam\tcovrollcam\tcovpitchcam\tcovyawcam\t" << endl; 
 
   ofstream outfileNoise("outputNoises.csv");
   outfileNoise << "sonNoiseTransl;sonNoiseRot;camSonNoiseTransl;camNoiseRot;" << endl;
@@ -1171,20 +1182,36 @@ int main(int argc, char** argv)
   cout << 0 << " Result: x,y,yaw = " << result.at<Pose3>(0).x() << "," << result.at<Pose3>(0).y() << "," << result.at<Pose3>(0).rotation().yaw() << endl;
 
   if(PRINT_UNIX_TIMES)
-    outfile << SONAR_TIME0 << ";"; 
+    {
+      outfile << SONAR_TIME0 << ";"; 
+      outfilexls << SONAR_TIME0 << "\t";
+    }
   else
-    outfile << 0 << ";"; 
+    {
+      outfile << 0 << ";"; 
+      outfilexls << 0 << "\t";
+    }
   outfile << result.at<Pose3>(0).x() << ";" << result.at<Pose3>(0).y() << ";" << result.at<Pose3>(0).z() << ";" << result.at<Pose3>(0).rotation().roll() << ";" << result.at<Pose3>(0).rotation().pitch() << ";" << result.at<Pose3>(0).rotation().yaw() << ";";
   outfile << initial.at<Pose3>(0).x() << ";" << initial.at<Pose3>(0).y() << ";" << initial.at<Pose3>(0).z() << ";" << initial.at<Pose3>(0).rotation().roll() << ";" << initial.at<Pose3>(0).rotation().pitch() << ";" << initial.at<Pose3>(0).rotation().yaw() << ";";
+
+  outfilexls << result.at<Pose3>(0).x() << "\t" << result.at<Pose3>(0).y() << "\t" << result.at<Pose3>(0).z() << "\t" << result.at<Pose3>(0).rotation().roll() << "\t" << result.at<Pose3>(0).rotation().pitch() << "\t" << result.at<Pose3>(0).rotation().yaw() << "\t";
+  outfilexls << initial.at<Pose3>(0).x() << "\t" << initial.at<Pose3>(0).y() << "\t" << initial.at<Pose3>(0).z() << "\t" << initial.at<Pose3>(0).rotation().roll() << "\t" << initial.at<Pose3>(0).rotation().pitch() << "\t" << initial.at<Pose3>(0).rotation().yaw() << "\t";
 
   cout << 0 << " Son Result: x,y,yaw = " << resultSonOnly.at<Pose3>(0).x() << "," << resultSonOnly.at<Pose3>(0).y() << "," << resultSonOnly.at<Pose3>(0).rotation().yaw() << endl;
   outfile << resultSonOnly.at<Pose3>(0).x() << ";" << resultSonOnly.at<Pose3>(0).y() << ";" << resultSonOnly.at<Pose3>(0).z() << ";" << resultSonOnly.at<Pose3>(0).rotation().roll() << ";" << resultSonOnly.at<Pose3>(0).rotation().pitch() << ";" << resultSonOnly.at<Pose3>(0).rotation().yaw() << ";";
   outfile << initialSon.at<Pose3>(0).x() << ";" << initialSon.at<Pose3>(0).y() << ";" << initialSon.at<Pose3>(0).z() << ";" << initialSon.at<Pose3>(0).rotation().roll() << ";" << initialSon.at<Pose3>(0).rotation().pitch() << ";" << initialSon.at<Pose3>(0).rotation().yaw() << ";";
 
+  outfilexls << resultSonOnly.at<Pose3>(0).x() << "\t" << resultSonOnly.at<Pose3>(0).y() << "\t" << resultSonOnly.at<Pose3>(0).z() << "\t" << resultSonOnly.at<Pose3>(0).rotation().roll() << "\t" << resultSonOnly.at<Pose3>(0).rotation().pitch() << "\t" << resultSonOnly.at<Pose3>(0).rotation().yaw() << "\t";
+  outfilexls << initialSon.at<Pose3>(0).x() << "\t" << initialSon.at<Pose3>(0).y() << "\t" << initialSon.at<Pose3>(0).z() << "\t" << initialSon.at<Pose3>(0).rotation().roll() << "\t" << initialSon.at<Pose3>(0).rotation().pitch() << "\t" << initialSon.at<Pose3>(0).rotation().yaw() << "\t";
+
   cout << 0 << " Cam Result: x,y,yaw = " << resultCamOnly.at<Pose3>(0).x() << "," << resultCamOnly.at<Pose3>(0).y() << "," << resultCamOnly.at<Pose3>(0).rotation().yaw() << endl;
   outfile << resultCamOnly.at<Pose3>(0).x() << ";" << resultCamOnly.at<Pose3>(0).y() << ";" << resultCamOnly.at<Pose3>(0).z() << ";" << resultCamOnly.at<Pose3>(0).rotation().roll() << ";" << resultCamOnly.at<Pose3>(0).rotation().pitch() << ";" << resultCamOnly.at<Pose3>(0).rotation().yaw() << ";";
   outfile << initialCam.at<Pose3>(0).x() << ";" << initialCam.at<Pose3>(0).y() << ";" << initialCam.at<Pose3>(0).z() << ";" << initialCam.at<Pose3>(0).rotation().roll() << ";" << initialCam.at<Pose3>(0).rotation().pitch() << ";" << initialCam.at<Pose3>(0).rotation().yaw() << ";";
   outfile << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << endl;
+
+  outfilexls << resultCamOnly.at<Pose3>(0).x() << "\t" << resultCamOnly.at<Pose3>(0).y() << "\t" << resultCamOnly.at<Pose3>(0).z() << "\t" << resultCamOnly.at<Pose3>(0).rotation().roll() << "\t" << resultCamOnly.at<Pose3>(0).rotation().pitch() << "\t" << resultCamOnly.at<Pose3>(0).rotation().yaw() << "\t";
+  outfilexls << initialCam.at<Pose3>(0).x() << "\t" << initialCam.at<Pose3>(0).y() << "\t" << initialCam.at<Pose3>(0).z() << "\t" << initialCam.at<Pose3>(0).rotation().roll() << "\t" << initialCam.at<Pose3>(0).rotation().pitch() << "\t" << initialCam.at<Pose3>(0).rotation().yaw() << "\t";
+  outfilexls << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << endl;
 
   int iSon = 0;
   int iCam = 0;
@@ -1269,22 +1296,38 @@ int main(int argc, char** argv)
 	  cout << nodeNum << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
 	  
 	  if(PRINT_UNIX_TIMES)
-	    outfile << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
+	    {
+	      outfile << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
+	      outfilexls << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << "\t"; 
+	    }
 	  else
-	    outfile << nodeNum << ";"; 
-	  
+	    {
+	      outfile << nodeNum << ";"; 
+	      outfilexls << nodeNum << "\t"; 
+	    }
 	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
 	  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
+
+	  outfilexls << xprint << "\t" << yprint << "\t" << zprint << "\t" << rollprint << "\t" << pitchprint << "\t" << yawprint << "\t";
+	  outfilexls << xinitprint << "\t" << yinitprint << "\t" << zinitprint << "\t" << rollinitprint << "\t" << pitchinitprint << "\t" << yawinitprint << "\t";
 	}
       else
 	{
 	  if(PRINT_UNIX_TIMES)
-	    outfile << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
+	    {
+	      outfile << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
+	      outfilexls << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << "\t"; 
+	    }
 	  else
+	    {
 	    outfile << nodeNum << ";"; 
-	  
+	    outfilexls << nodeNum << "\t";
+	    }
 	  outfile << ";;;;;;";
 	  outfile << ";;;;;;";
+
+	  outfilexls << "\t\t\t\t\t\t";
+	  outfilexls << "\t\t\t\t\t\t";
 	}
 
       //-------------SonOnly-------------//
@@ -1335,11 +1378,16 @@ int main(int argc, char** argv)
 	  
 	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
 	  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
+
+	  outfilexls << xprint << "\t" << yprint << "\t" << zprint << "\t" << rollprint << "\t" << pitchprint << "\t" << yawprint << "\t";
+	  outfilexls << xinitprint << "\t" << yinitprint << "\t" << zinitprint << "\t" << rollinitprint << "\t" << pitchinitprint << "\t" << yawinitprint << "\t";
 	  
 	}
       else
+	{
 	outfile << ";;;;;;;;;;;;";
-
+	outfilexls << "\t\t\t\t\t\t\t\t\t\t\t";
+	}
       //-------------CamOnly----------------//
       if(t2cam_arr[iCam]==nodeNum)
 	{
@@ -1390,11 +1438,16 @@ int main(int argc, char** argv)
 	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
 	  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
 
+	  outfilexls << xprint << "\t" << yprint << "\t" << zprint << "\t" << rollprint << "\t" << pitchprint << "\t" << yawprint << "\t";
+	  outfilexls << xinitprint << "\t" << yinitprint << "\t" << zinitprint << "\t" << rollinitprint << "\t" << pitchinitprint << "\t" << yawinitprint << "\t";
+
 	}
 
       else
-	outfile << ";;;;;;;;;;;;";
-
+	{
+	  outfile << ";;;;;;;;;;;;";
+	  outfilexls << "\t\t\t\t\t\t\t\t\t\t\t\t";
+	}
       //------------------------------------------------------------------------
       // Calculate and print marginal covariances for all variables
       cout.precision(2); 
@@ -1407,12 +1460,14 @@ int main(int argc, char** argv)
 	    {
 	      cout << marginals.marginalCovariance(nodeNum)(i1,i1) << ",";
 	      outfile << marginals.marginalCovariance(nodeNum)(i1,i1) << ";";
+	      outfilexls << marginals.marginalCovariance(nodeNum)(i1,i1) << "\t";
 	    }
 	  cout << endl;
 	}
       else
 	{
 	  outfile << ";;;;;;";
+	  outfilexls << "\t\t\t\t\t\t";
 	}
       //------------SonOnly--------------//
       //      if(t2son_arr[iSon]==nodeNum)
@@ -1424,12 +1479,15 @@ int main(int argc, char** argv)
 	      //Note: If problem here, probably yaw covariance too big
 	      cout << marginalsSonOnly.marginalCovariance(t2son_arr[iSon])(i1,i1) << ",";
 	      outfile << marginalsSonOnly.marginalCovariance(t2son_arr[iSon])(i1,i1) << ";";
+	      outfilexls << marginalsSonOnly.marginalCovariance(t2son_arr[iSon])(i1,i1) << "\t";
 	    }
 	  cout << endl;
 	}
       else
+	{
 	outfile << ";;;;;;";
-
+	outfilexls << "\t\t\t\t\t\t";
+	}
       //------------VidOnly------------//
       //      if(t2cam_arr[iCam]==nodeNum)
       if((!doneCam)&&(t2cam_arr[iCam]==nodeNum))
@@ -1439,13 +1497,17 @@ int main(int argc, char** argv)
 	    {
 	      cout << marginalsCamOnly.marginalCovariance(t2cam_arr[iCam])(i1,i1) << ",";
 	      outfile << marginalsCamOnly.marginalCovariance(t2cam_arr[iCam])(i1,i1) << ";";
+	      outfilexls << marginalsCamOnly.marginalCovariance(t2cam_arr[iCam])(i1,i1) << "\t";
 	    }
 	  cout << endl;
 	}
       else
-	outfile << ";;;;;;";
-
+	{
+	  outfile << ";;;;;;";
+	  outfilexls << "\t\t\t\t\t\t";
+	}
       outfile << endl;
+      outfilexls << endl;
 
       //Increment counters if needed:
       if((t2son_arr[iSon] == nodeNum)&&(nodeNum!=lastSonNode))
@@ -1482,6 +1544,7 @@ int main(int argc, char** argv)
   cout << "Result Error (Camera): " << graphCamOnly.error(resultCamOnly) << endl;
 
   outfile.close();
+  outfilexls.close();
   outfileNoise.close();
   return 0;
 }
