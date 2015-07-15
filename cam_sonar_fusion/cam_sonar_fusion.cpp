@@ -180,55 +180,82 @@ int main(int argc, char** argv)
   if(strcmp(tmpstring.c_str(),"t1")==0) //FOUND t1 HEADING
     cout << "FOUND t1 HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND t1 HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileSon,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"t2")==0) //FOUND t2 HEADING
     cout << "FOUND t2 HEADING! - " << tmpstring << endl;
   else
-    cout << "DIDN'T FIND t2 HEADING! - " << tmpstring << endl;
+    {
+      cout << "DIDN'T FIND t2 HEADING! - " << tmpstring << endl;
+      return -1;
+    }
 
   getline(inFileSon,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"x")==0) //FOUND son x HEADING
     cout << "FOUND X HEADING! - " << tmpstring << endl;
   else
-    cout << "DIDN'T FIND X HEADING! - " << tmpstring << endl;
+    {
+      cout << "DIDN'T FIND X HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileSon,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"y")==0) //FOUND son y HEADING
     cout << "FOUND Y HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND Y HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileSon,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"yaw")==0) //FOUND son yaw HEADING
     cout << "FOUND YAW HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND YAW HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileSon,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"numCorners")==0) //FOUND son numCorners HEADING
     cout << "FOUND NUMCORNERS HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND NUMCORNERS HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileSon,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"numMatches")==0) //FOUND son numMatches HEADING
     cout << "FOUND NUMMATCHES HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND NUMMATCHES HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileSon,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"numInliers")==0) //FOUND son numInliers HEADING
     cout << "FOUND NUMINLIERS HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND NUMINLIERS HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileSon,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"estValid")==0) //FOUND cam numInliers HEADING
     cout << "FOUND ESTVALID HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND ESTVALID HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileSon,tmpstring,'\n'); //Discard rest of line
   if(VERBOSE)
@@ -239,73 +266,109 @@ int main(int argc, char** argv)
   if(strcmp(tmpstring.c_str(),"t1")==0) //FOUND cam t1 HEADING
     cout << "FOUND t1 HEADING! - " << tmpstring << endl;
   else
-    cout << "DIDN'T FIND t1 HEADING! - " << tmpstring << endl;
+    {
+      cout << "DIDN'T FIND t1 HEADING! - " << tmpstring << endl;
+      return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"t2")==0) //FOUND cam t2 HEADING
     cout << "FOUND t2 HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND t2 HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"x")==0) //FOUND cam x HEADING
     cout << "FOUND x HEADING! - " << tmpstring << endl;
   else
-    cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
+        {
+cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"y")==0) //FOUND cam y HEADING
     cout << "FOUND y HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND y HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"z")==0) //FOUND cam z HEADING
     cout << "FOUND z HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND z HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"roll")==0) //FOUND cam roll HEADING
     cout << "FOUND roll HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND roll HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"pitch")==0) //FOUND cam pitch HEADING
     cout << "FOUND pitch HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND pitch HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"yaw")==0) //FOUND cam yaw HEADING
     cout << "FOUND yaw HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND yaw HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"numCorners")==0) //FOUND cam numCorners HEADING
     cout << "FOUND NUMCORNERS HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND NUMCORNERS HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"numMatches")==0) //FOUND cam numMatches HEADING
     cout << "FOUND NUMMATCHES HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND NUMMATCHES HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"numInliers")==0) //FOUND cam numInliers HEADING
     cout << "FOUND NUMINLIERS HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND NUMINLIERS HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"estValid")==0) //FOUND cam numInliers HEADING
     cout << "FOUND ESTVALID HEADING! - " << tmpstring << endl;
   else
+    {
     cout << "DIDN'T FIND ESTVALID HEADING! - " << tmpstring << endl;
+    return -1;
+    }
 
   getline(inFileCam,tmpstring,'\n'); //Discard rest of line
   if(VERBOSE)
@@ -318,29 +381,41 @@ int main(int argc, char** argv)
       if(strcmp(tmpstring.c_str(),"timestamp")==0) //FOUND truth timestamp HEADING
 	cout << "FOUND timestamp HEADING! - " << tmpstring << endl;
       else
-	cout << "DIDN'T FIND timestamp HEADING! - " << tmpstring << endl;
+	{
+	  cout << "DIDN'T FIND timestamp HEADING! - " << tmpstring << endl;
+	  return -1;
+	}
       
       getline(inFileTruth,tmpstring,';');
       if(strcmp(tmpstring.c_str(),"x")==0) //FOUND truth x HEADING
 	cout << "FOUND x HEADING! - " << tmpstring << endl;
       else
-	cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
+	{
+	  cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
+	  return -1;
+	}
       
       getline(inFileTruth,tmpstring,';');
       if(strcmp(tmpstring.c_str(),"y")==0) //FOUND truth y HEADING
 	cout << "FOUND y HEADING! - " << tmpstring << endl;
       else
-	cout << "DIDN'T FIND y HEADING! - " << tmpstring << endl;
+	{
+	  cout << "DIDN'T FIND y HEADING! - " << tmpstring << endl;
+	  return -1;
+	}
       
       getline(inFileTruth,tmpstring,';');
       if(strcmp(tmpstring.c_str(),"yaw")==0) //FOUND truth yaw HEADING
 	cout << "FOUND yaw HEADING! - " << tmpstring << endl;
       else
-	cout << "DIDN'T FIND yaw HEADING! - " << tmpstring << endl;
+	{
+	  cout << "DIDN'T FIND yaw HEADING! - " << tmpstring << endl;
+	  return -1;
+	}
       
       getline(inFileTruth,tmpstring,'\n'); //Discard rest of line
       if(VERBOSE)
-	cout << "Bad input data found, discarding: " << tmpstring << endl;
+  	cout << "Bad input data found, discarding: " << tmpstring << endl;
     }
 
   //Create input data arrays:
@@ -556,11 +631,6 @@ int main(int argc, char** argv)
       for(int i=0; i<lengthCam; i++)
 	{
 	  cout << "CamValid=" << estValid_arr[i] << endl;
-	}
-
-      for(int i=0; i<lengthTruth; i++)
-	{
-	  cout << "Truth=" << t2truth_arr[i] << " - " << xtruth_arr[i] << "," << ytruth_arr[i] << "," << yawtruth_arr[i] << endl;
 	}
     }
 
