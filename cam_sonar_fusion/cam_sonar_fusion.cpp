@@ -95,8 +95,9 @@ int main(int argc, char** argv)
 {
   char sonInputFileName[256];
   char camInputFileName[256];
+  char truthInputFileName[256];
 
-  int firstSonNode, firstCamNode, lastSonNode, lastCamNode;
+  int firstSonNode, firstCamNode, firstTruthNode, lastSonNode, lastCamNode, lastTruthNode;
 
   double SONAR_TIME0;
   
@@ -105,21 +106,24 @@ int main(int argc, char** argv)
 
   if(argc < 3)
     {
-      cout << "Not Enough Args. Usage: ./gtsam <sonar input CSV file with x,y,theta> <camera input CSV file with x,y,z,roll,pitch,yaw>" << endl << "Example: ./gtsam soninput.csv caminput.csv" << endl;
+      cout << "Not Enough Args. Usage: ./gtsam <sonar input CSV file with x,y,theta> <camera input CSV file with x,y,z,roll,pitch,yaw> <OPTIONAL truth CSV file with x,y,yaw>" << endl << "Example: ./gtsam soninput.csv caminput.csv truth.csv" << endl;
       return 0;
     }
   else
     {
       strcpy(sonInputFileName, argv[1]);  
-      strcpy(camInputFileName, argv[2]);  
+      strcpy(camInputFileName, argv[2]);
+      if(argc > 3)
+	strcpy(truthInputFileName, argv[3]);  
     }
 
   ifstream inFileSon(sonInputFileName);
   ifstream inFileCam(camInputFileName);
+  ifstream inFileTruth(truthInputFileName);
 
   string tmpstring;
   
-  int lengthSon, lengthCam;
+  int lengthSon, lengthCam, lengthTruth;
 
   //Get number of rows for each file input:
   getline(inFileSon,tmpstring,';'); //First line should just have length listed
@@ -152,7 +156,26 @@ int main(int argc, char** argv)
   if(VERBOSE)
     cout << "Bad input data found, discarding: " << tmpstring << endl;
 
-  //--------------Look for headings:----------------------//
+  //Truth file length:
+  if(argc > 3)
+    {
+      getline(inFileTruth,tmpstring,';'); //First line should just have length listed
+      if(strcmp(tmpstring.c_str(),"length=")==0) //Found correct string
+	cout << "Found length" << endl;
+      else
+	{
+	  cout << "Couldn't find truth length." << endl;
+	  return 0;
+	}
+      getline(inFileTruth,tmpstring,';'); //First line should just have length listed
+      lengthTruth = (int)(atoi(tmpstring.c_str()));
+      cout << "lengthTruth=" << lengthTruth << endl;
+      getline(inFileTruth,tmpstring,'\n'); //Discard rest of line
+      if(VERBOSE)
+	cout << "Bad input data found, discarding: " << tmpstring << endl;
+    }
+
+  //--------------Look for son headings:----------------------//
   getline(inFileSon,tmpstring,';');
   if(strcmp(tmpstring.c_str(),"t1")==0) //FOUND t1 HEADING
     cout << "FOUND t1 HEADING! - " << tmpstring << endl;
@@ -288,6 +311,38 @@ int main(int argc, char** argv)
   if(VERBOSE)
     cout << "Bad input data found, discarding: " << tmpstring << endl;
 
+  //Read in truth input file headings:
+  if(argc > 3)
+    {
+      getline(inFileTruth,tmpstring,';');
+      if(strcmp(tmpstring.c_str(),"timestamp")==0) //FOUND truth timestamp HEADING
+	cout << "FOUND timestamp HEADING! - " << tmpstring << endl;
+      else
+	cout << "DIDN'T FIND timestamp HEADING! - " << tmpstring << endl;
+      
+      getline(inFileTruth,tmpstring,';');
+      if(strcmp(tmpstring.c_str(),"x")==0) //FOUND truth x HEADING
+	cout << "FOUND x HEADING! - " << tmpstring << endl;
+      else
+	cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
+      
+      getline(inFileTruth,tmpstring,';');
+      if(strcmp(tmpstring.c_str(),"y")==0) //FOUND truth y HEADING
+	cout << "FOUND y HEADING! - " << tmpstring << endl;
+      else
+	cout << "DIDN'T FIND y HEADING! - " << tmpstring << endl;
+      
+      getline(inFileTruth,tmpstring,';');
+      if(strcmp(tmpstring.c_str(),"yaw")==0) //FOUND truth yaw HEADING
+	cout << "FOUND yaw HEADING! - " << tmpstring << endl;
+      else
+	cout << "DIDN'T FIND yaw HEADING! - " << tmpstring << endl;
+      
+      getline(inFileTruth,tmpstring,'\n'); //Discard rest of line
+      if(VERBOSE)
+	cout << "Bad input data found, discarding: " << tmpstring << endl;
+    }
+
   //Create input data arrays:
   double * t1son_arr;
   double * t2son_arr;
@@ -334,6 +389,18 @@ int main(int argc, char** argv)
   numMatches_arr = new float[lengthCam];
   numInliers_arr = new float[lengthCam];
   estValid_arr = new int[lengthCam];
+
+  double * t2truth_arr;
+  float * xtruth_arr;
+  float * ytruth_arr;
+  float * yawtruth_arr;
+  if(argc > 3)
+    {
+      t2truth_arr = new double[lengthTruth];
+      xtruth_arr = new float[lengthTruth];
+      ytruth_arr = new float[lengthTruth];
+      yawtruth_arr = new float[lengthTruth];
+    }
 
   cout.precision(12); 
 
@@ -429,13 +496,45 @@ int main(int argc, char** argv)
 	cout << "Bad input data found, discarding: " << tmpstring << endl;
     }    
 
+  //-------------Read in truth data------------
+  if(argc > 3)
+    {
+      for(int i=0; i<lengthTruth; i++)
+	{
+	  //Truth Data:
+	  getline(inFileTruth,tmpstring,';');
+	  t2truth_arr[i] = (double)(atof(tmpstring.c_str()));
+	  
+	  getline(inFileTruth,tmpstring,';');
+	  xtruth_arr[i] = (float)(atof(tmpstring.c_str()));
+	  
+	  getline(inFileTruth,tmpstring,';');
+	  ytruth_arr[i] = (float)(atof(tmpstring.c_str()));
+	  
+	  getline(inFileTruth,tmpstring,';');
+	  yawtruth_arr[i] = (float)(atof(tmpstring.c_str()));
+
+	  cout << "truth (t,x,y,yaw): " << t2truth_arr[i] << "," << xtruth_arr[i] << "," << ytruth_arr[i] << "," << yawtruth_arr[i] << endl;
+	  
+	  getline(inFileTruth,tmpstring,'\n'); //Discard rest of line
+	}    
+    }
+
   //Find the first and last nodes:
   firstSonNode = t1son_arr[0];
   firstCamNode = t1cam_arr[0];
+  if(argc > 3)
+    firstTruthNode = t2truth_arr[0];
+
   lastSonNode = t2son_arr[lengthSon-1];
   lastCamNode = t2cam_arr[lengthCam-1];
+  if(argc > 3)
+    lastTruthNode = t2truth_arr[lengthTruth-1];
+
   cout << "Sonar Nodes: " << firstSonNode << ":" << lastSonNode << endl;
   cout << "Camera Nodes: " << firstCamNode << ":" << lastCamNode << endl;
+  if(argc > 3)
+    cout << "Truth Nodes: " << firstTruthNode << "(" << round((firstTruthNode-SONAR_TIME0)*TIME_NODE_MULT) << ")" << ":" << lastTruthNode << "(" << round((lastTruthNode-SONAR_TIME0)*TIME_NODE_MULT) << ")" << endl;
 
   //Print out the data that was read in:
   if(VERBOSE)
@@ -458,6 +557,11 @@ int main(int argc, char** argv)
 	{
 	  cout << "CamValid=" << estValid_arr[i] << endl;
 	}
+
+      for(int i=0; i<lengthTruth; i++)
+	{
+	  cout << "Truth=" << t2truth_arr[i] << " - " << xtruth_arr[i] << "," << ytruth_arr[i] << "," << yawtruth_arr[i] << endl;
+	}
     }
 
 
@@ -471,8 +575,10 @@ int main(int argc, char** argv)
   outfile << "xcamSum;ycamSum;zcamSum;rollcamSum;pitchcamSum;yawcamSum;";
   outfile << "covx;covy;covz;covroll;covpitch;covyaw;";
   outfile << "covxson;covyson;covzson;covrollson;covpitchson;covyawson;";
-  outfile << "covxcam;covycam;covzcam;covrollcam;covpitchcam;covyawcam;" << endl;
+  outfile << "covxcam;covycam;covzcam;covrollcam;covpitchcam;covyawcam;";
   //outfile << "noiseTranslSon;noiseRotSon;noiseTranslCam;noiseRotCam;" << endl; 
+  outfile << "xtruth;ytruth;yawtruth;";
+  outfile << endl;
 
   ofstream outfilexls("outputGTSAM.xls");
   outfilexls << "frame/time?\tx\ty\tz\troll\tpitch\tyaw\t";
@@ -483,8 +589,10 @@ int main(int argc, char** argv)
   outfilexls << "xcamSum\tycamSum\tzcamSum\trollcamSum\tpitchcamSum\tyawcamSum\t";
   outfilexls << "covx\tcovy\tcovz\tcovroll\tcovpitch\tcovyaw\t";
   outfilexls << "covxson\tcovyson\tcovzson\tcovrollson\tcovpitchson\tcovyawson\t";
-  outfilexls << "covxcam\tcovycam\tcovzcam\tcovrollcam\tcovpitchcam\tcovyawcam\t" << endl; 
+  outfilexls << "covxcam\tcovycam\tcovzcam\tcovrollcam\tcovpitchcam\tcovyawcam\t";
   //  outfilexls << "noiseTranslSon\tnoiseRotSon\tnoiseTranslCam\tnoiseRotCam" << endl; 
+  outfilexls << "xtruth\tytruth\tyawtruth\t";
+  outfilexls << endl; 
 
   ofstream outfileNoise("outputNoises.csv");
   outfileNoise << "camNoiseTransl;camNoiseRot;sonSonNoiseTransl;sonNoiseRot;" << endl;
@@ -1215,16 +1323,22 @@ int main(int argc, char** argv)
   cout << 0 << " Cam Result: x,y,yaw = " << resultCamOnly.at<Pose3>(0).x() << "," << resultCamOnly.at<Pose3>(0).y() << "," << resultCamOnly.at<Pose3>(0).rotation().yaw() << endl;
   outfile << resultCamOnly.at<Pose3>(0).x() << ";" << resultCamOnly.at<Pose3>(0).y() << ";" << resultCamOnly.at<Pose3>(0).z() << ";" << resultCamOnly.at<Pose3>(0).rotation().roll() << ";" << resultCamOnly.at<Pose3>(0).rotation().pitch() << ";" << resultCamOnly.at<Pose3>(0).rotation().yaw() << ";";
   outfile << initialCam.at<Pose3>(0).x() << ";" << initialCam.at<Pose3>(0).y() << ";" << initialCam.at<Pose3>(0).z() << ";" << initialCam.at<Pose3>(0).rotation().roll() << ";" << initialCam.at<Pose3>(0).rotation().pitch() << ";" << initialCam.at<Pose3>(0).rotation().yaw() << ";";
-  outfile << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << endl;
+  outfile << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";";
+  outfile << xtruth_arr[0] << ";" << ytruth_arr[0] << ";" << yawtruth_arr[0] << ";";
+  outfile << endl;
 
   outfilexls << resultCamOnly.at<Pose3>(0).x() << "\t" << resultCamOnly.at<Pose3>(0).y() << "\t" << resultCamOnly.at<Pose3>(0).z() << "\t" << resultCamOnly.at<Pose3>(0).rotation().roll() << "\t" << resultCamOnly.at<Pose3>(0).rotation().pitch() << "\t" << resultCamOnly.at<Pose3>(0).rotation().yaw() << "\t";
   outfilexls << initialCam.at<Pose3>(0).x() << "\t" << initialCam.at<Pose3>(0).y() << "\t" << initialCam.at<Pose3>(0).z() << "\t" << initialCam.at<Pose3>(0).rotation().roll() << "\t" << initialCam.at<Pose3>(0).rotation().pitch() << "\t" << initialCam.at<Pose3>(0).rotation().yaw() << "\t";
-  outfilexls << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << endl;
+  outfilexls << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t";
+  outfilexls << xtruth_arr[0] << "\t" << ytruth_arr[0] << "\t" << yawtruth_arr[0] << "\t";
+  outfilexls << endl;
 
   int iSon = 0;
   int iCam = 0;
+  int iTruth = 0;
   bool doneSon = false;
   bool doneCam = false; //Flag to tell when done with Cam data
+  bool doneTruth = false;
 
   do  //do while not finished with BOTH files
     {
@@ -1305,7 +1419,7 @@ int main(int argc, char** argv)
 	  
 	  if(PRINT_UNIX_TIMES)
 	    {
-	      outfile << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";"; 
+	      outfile << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << ";";
 	      outfilexls << ((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0 << "\t"; 
 	    }
 	  else
@@ -1328,8 +1442,8 @@ int main(int argc, char** argv)
 	    }
 	  else
 	    {
-	    outfile << nodeNum << ";"; 
-	    outfilexls << nodeNum << "\t";
+	      outfile << nodeNum << ";"; 
+	      outfilexls << nodeNum << "\t";
 	    }
 	  outfile << ";;;;;;";
 	  outfile << ";;;;;;";
@@ -1393,8 +1507,8 @@ int main(int argc, char** argv)
 	}
       else
 	{
-	outfile << ";;;;;;;;;;;;";
-	outfilexls << "\t\t\t\t\t\t\t\t\t\t\t";
+	  outfile << ";;;;;;;;;;;;";
+	  outfilexls << "\t\t\t\t\t\t\t\t\t\t\t\t";
 	}
       //-------------CamOnly----------------//
       if(t2cam_arr[iCam]==nodeNum)
@@ -1445,7 +1559,6 @@ int main(int argc, char** argv)
 	  
 	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
 	  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
-
 	  outfilexls << xprint << "\t" << yprint << "\t" << zprint << "\t" << rollprint << "\t" << pitchprint << "\t" << yawprint << "\t";
 	  outfilexls << xinitprint << "\t" << yinitprint << "\t" << zinitprint << "\t" << rollinitprint << "\t" << pitchinitprint << "\t" << yawinitprint << "\t";
 
@@ -1458,7 +1571,8 @@ int main(int argc, char** argv)
 	}
       //------------------------------------------------------------------------
       // Calculate and print marginal covariances for all variables
-      cout.precision(2); 
+      cout.precision(2);
+      cout << fixed;
       //cout << "x" << i << " covariance:\n" << marginals.marginalCovariance(i) << endl;
 
       if(t2cam_arr[iCam]==nodeNum)
@@ -1499,7 +1613,7 @@ int main(int argc, char** argv)
       //------------VidOnly------------//
       //      if(t2cam_arr[iCam]==nodeNum)
       if((!doneCam)&&(t2cam_arr[iCam]==nodeNum))
-	{
+	{	  
 	  cout << "X" << nodeNum << " Cam covariance: ";
 	  for(int i1=0;i1<6;i1++)
 	    {
@@ -1514,6 +1628,30 @@ int main(int argc, char** argv)
 	  outfile << ";;;;;;";
 	  outfilexls << "\t\t\t\t\t\t";
 	}
+
+      //-------------TRUTH output -------------------//
+      if(argc > 3)
+	{
+	  if((t2son_arr[iSon] == nodeNum)||(t2cam_arr[iCam] == nodeNum))
+	    {
+	      //cout << "abs(" << nodeNum << " + " << SONAR_TIME0*TIME_NODE_MULT << "-" << t2truth_arr[iTruth] << ") = ";
+	      //while(abs(((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0-t2truth_arr[iTruth]) > abs(((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0-t2truth_arr[iTruth+1]))
+	      while(abs((double)nodeNum/TIME_NODE_MULT + SONAR_TIME0 - t2truth_arr[iTruth]) > abs((double)nodeNum/TIME_NODE_MULT + SONAR_TIME0 - t2truth_arr[iTruth+1]))
+		{
+		  if(iTruth < lengthTruth-2)//only increment if not at end
+		    iTruth++; //increment until find closest time
+		}
+		if(iTruth > 0)
+		  cout << "Last node: " << iTruth-1 << " = " << abs((double)nodeNum/TIME_NODE_MULT + SONAR_TIME0 - t2truth_arr[iTruth-1]) << endl;
+		cout << "This node: " << iTruth << " = " << abs((double)nodeNum/TIME_NODE_MULT + SONAR_TIME0 - t2truth_arr[iTruth]) << endl;
+		cout << "Next node: " << iTruth+1 << " = " << abs((double)nodeNum/TIME_NODE_MULT + SONAR_TIME0 - t2truth_arr[iTruth+1]) << endl;
+		
+		cout << iTruth << ":" << (double)nodeNum/TIME_NODE_MULT + SONAR_TIME0 << " -- " << t2truth_arr[iTruth] << endl;
+		outfile << xtruth_arr[iTruth] << ";" << ytruth_arr[iTruth] << ";" << yawtruth_arr[iTruth] << ";";
+		outfilexls << xtruth_arr[iTruth] << "\t" << ytruth_arr[iTruth] << "\t" << yawtruth_arr[iTruth] << "\t";
+	    }
+	}
+
       outfile << endl;
       outfilexls << endl;
 
