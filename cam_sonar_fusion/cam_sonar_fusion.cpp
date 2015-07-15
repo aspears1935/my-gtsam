@@ -1394,13 +1394,15 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   outfile << resultCamOnly.at<Pose3>(0).x() << ";" << resultCamOnly.at<Pose3>(0).y() << ";" << resultCamOnly.at<Pose3>(0).z() << ";" << resultCamOnly.at<Pose3>(0).rotation().roll() << ";" << resultCamOnly.at<Pose3>(0).rotation().pitch() << ";" << resultCamOnly.at<Pose3>(0).rotation().yaw() << ";";
   outfile << initialCam.at<Pose3>(0).x() << ";" << initialCam.at<Pose3>(0).y() << ";" << initialCam.at<Pose3>(0).z() << ";" << initialCam.at<Pose3>(0).rotation().roll() << ";" << initialCam.at<Pose3>(0).rotation().pitch() << ";" << initialCam.at<Pose3>(0).rotation().yaw() << ";";
   outfile << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";";
-  outfile << xtruth_arr[0] << ";" << ytruth_arr[0] << ";" << yawtruth_arr[0] << ";";
+  if(argc > 3)
+    outfile << xtruth_arr[0] << ";" << ytruth_arr[0] << ";" << yawtruth_arr[0] << ";";
   outfile << endl;
 
   outfilexls << resultCamOnly.at<Pose3>(0).x() << "\t" << resultCamOnly.at<Pose3>(0).y() << "\t" << resultCamOnly.at<Pose3>(0).z() << "\t" << resultCamOnly.at<Pose3>(0).rotation().roll() << "\t" << resultCamOnly.at<Pose3>(0).rotation().pitch() << "\t" << resultCamOnly.at<Pose3>(0).rotation().yaw() << "\t";
   outfilexls << initialCam.at<Pose3>(0).x() << "\t" << initialCam.at<Pose3>(0).y() << "\t" << initialCam.at<Pose3>(0).z() << "\t" << initialCam.at<Pose3>(0).rotation().roll() << "\t" << initialCam.at<Pose3>(0).rotation().pitch() << "\t" << initialCam.at<Pose3>(0).rotation().yaw() << "\t";
   outfilexls << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t";
-  outfilexls << xtruth_arr[0] << "\t" << ytruth_arr[0] << "\t" << yawtruth_arr[0] << "\t";
+  if(argc > 3)
+    outfilexls << xtruth_arr[0] << "\t" << ytruth_arr[0] << "\t" << yawtruth_arr[0] << "\t";
   outfilexls << endl;
 
   int iSon = 0;
