@@ -495,7 +495,7 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
       getline(inFileSon,tmpstring,';');
       y_son_arr[i] = (float)(atof(tmpstring.c_str()));
       getline(inFileSon,tmpstring,';');
-      yaw_son_arr[i] = (float)(atof(tmpstring.c_str()));
+      yaw_son_arr[i] = (float)(atof(tmpstring.c_str()))*PI/180;
 
       getline(inFileSon,tmpstring,';');
       numCorners_son_arr[i] = (float)(atof(tmpstring.c_str()));
@@ -1417,6 +1417,9 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   bool doneSon = false;
   bool doneCam = false; //Flag to tell when done with Cam data
   bool doneTruth = false;
+  double prev_cam_yaw = 0;
+  double prev_son_yaw = 0;
+  double prev_fuse_yaw = 0;
 
   do  //do while not finished with BOTH files
     {
@@ -1492,7 +1495,14 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 	    pitchinitprint = 0;
 	  if(abs(yawinitprint) < 0.001)
 	    yawinitprint = 0;
-	  
+
+	  if((yawprint - prev_fuse_yaw) > 3*PI/4)
+	    yawprint -= 2*PI;
+	  else if((yawprint - prev_fuse_yaw) < -3*PI/4)
+	    yawprint += 2*PI;
+ 
+	  prev_fuse_yaw = yawprint;	  
+
 	  cout << nodeNum << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
 	  
 	  if(PRINT_UNIX_TIMES)
@@ -1573,7 +1583,14 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 	    pitchinitprint = 0;
 	  if(abs(yawinitprint) < 0.001)
 	    yawinitprint = 0;
-	  
+
+	  if((yawprint - prev_son_yaw) > 3*PI/4)
+	    yawprint -= 2*PI;
+	  else if((yawprint - prev_son_yaw) < -3*PI/4)
+	    yawprint += 2*PI;
+
+	  prev_son_yaw = yawprint;	  
+
 	  cout << t2son_arr[iSon] << " Sonar Only Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
 	  
 	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
@@ -1631,6 +1648,13 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 	    pitchinitprint = 0;
 	  if(abs(yawinitprint) < 0.001)
 	    yawinitprint = 0;
+
+	  if((yawprint - prev_cam_yaw) > 3*PI/4)
+	    yawprint -= 2*PI;
+	  else if((yawprint - prev_cam_yaw) < -3*PI/4)
+	    yawprint += 2*PI;
+
+	  prev_cam_yaw = yawprint;
 
 	  cout << t2cam_arr[iCam] << " Cam Only Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
 	  cout << t2cam_arr[iCam] << " Cam Only Initial: x,y,yaw = " << xinitprint << "," << yinitprint << "," << yawinitprint << endl;
