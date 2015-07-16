@@ -665,7 +665,7 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   outfilexls << endl; 
 
   ofstream outfileNoise("outputNoises.csv");
-  outfileNoise << "camNoiseTransl;camNoiseRot;sonSonNoiseTransl;sonNoiseRot;" << endl;
+  outfileNoise << "camSonNoiseTransl;camNoiseRot;sonNoiseTransl;sonNoiseRot;" << endl;
 
   // Create an empty nonlinear factor graph
   NonlinearFactorGraph graph;
@@ -883,6 +883,12 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 	    cout << "Son Noise (transl,rot): " << sonNoiseTransl << "," << sonNoiseRot << endl;
 
 	  if((numInliers_son_arr[iSon2] >= SON_INLIERS_THRESH)&&(estValid_son_arr[iSon2]==1)) //Good Sonar Node then update noise nodes:
+	    {
+	      sonNoiseTranslRobust = sonNoiseTransl;
+	      sonNoiseRotRobust = sonNoiseRot;
+	    }
+
+	  if(iSon2==0) //Save first input as robust regardless
 	    {
 	      sonNoiseTranslRobust = sonNoiseTransl;
 	      sonNoiseRotRobust = sonNoiseRot;
