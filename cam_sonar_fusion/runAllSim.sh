@@ -1,3 +1,23 @@
+rm outputsSim/consoleout_DownAllIce.txt
+rm outputsSim/consoleout_frontBrashIceForward.txt
+rm outputsSim/consoleout_frontLakeIceForward.txt
+rm outputsSim/consoleout_frontPlateletIceForward.txt
+rm outputsSim/consoleout_frontVoronoiIceForward.txt
+rm outputsSim/consoleout_frontBrashIceCircle.txt
+rm outputsSim/consoleout_frontLakeIceCircle.txt
+rm outputsSim/consoleout_frontPlateletIceCircle.txt
+rm outputsSim/consoleout_frontVoronoiIceCircle.txt
+rm outputsSim/consoleout_downBrashIceCircle.txt
+rm outputsSim/consoleout_downLakeIceCircle.txt
+rm outputsSim/consoleout_downPlateletIceCircle.txt
+rm outputsSim/consoleout_downVoronoiIceCircle.txt
+rm outputsSim/consoleout_frontSCurve.txt
+rm outputsSim/consoleout_upSCurve.txt
+rm outputsSim/consoleout_frontAllIceForward.txt
+rm outputsSim/consoleout_upAllIceForward.txt
+
+#####################################################
+
 ./CamSonarFusion ../../opencv-as/shiftEstSonarOnly/outputsSim/outputSonarGTSAM_simRect200x100_1x.csv ../../opencv-as/shiftEstVideoOnly/outputsSim/outputCameraDownAllIceFinalGTSAM.csv ../../Data/Simulated2014/simulatedDownAllIce.csv >> outputsSim/consoleout_DownAllIce.txt
 cp outputGTSAM.csv outputsSim/outputGTSAM_DownAllIce.csv
 cp outputGTSAM.xls outputsSim/outputGTSAM_DownAllIce.xls
