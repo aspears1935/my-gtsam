@@ -1,3 +1,33 @@
+rm outputsColorado/consoleout_colorado1.txt
+rm outputsColorado/consoleout_colorado2.txt
+rm outputsColorado/consoleout_colorado3.txt
+rm outputsColorado/consoleout_colorado4.txt
+rm outputsColorado/consoleout_colorado5.txt
+rm outputsColorado/consoleout_colorado6.txt
+rm outputsColorado/consoleout_colorado7.txt
+rm outputsColorado/consoleout_colorado8.txt
+rm outputsColorado/consoleout_colorado9.txt
+rm outputsColorado/consoleout_colorado10.txt
+rm outputsColorado/consoleout_colorado11.txt
+rm outputsColorado/consoleout_colorado12.txt
+rm outputsColorado/consoleout_colorado13.txt
+rm outputsColorado/consoleout_colorado14.txt
+rm outputsColorado/consoleout_colorado15.txt
+rm outputsColorado/consoleout_colorado16.txt
+rm outputsColorado/consoleout_colorado17.txt
+rm outputsColorado/consoleout_colorado18.txt
+rm outputsColorado/consoleout_colorado19.txt
+rm outputsColorado/consoleout_colorado20.txt
+rm outputsColorado/consoleout_colorado21.txt
+rm outputsColorado/consoleout_colorado22.txt
+rm outputsColorado/consoleout_colorado23.txt
+rm outputsColorado/consoleout_colorado24.txt
+rm outputsColorado/consoleout_colorado25.txt
+rm outputsColorado/consoleout_colorado26.txt
+rm outputsColorado/consoleout_colorado27.txt
+
+#################################
+
 ./CamSonarFusion ../../opencv-as/shiftEstSonarOnly/outputsColorado/outputSonarGTSAM_colorado1.csv ../../opencv-as/shiftEstVideoOnly/outputsColorado/outputCameraGTSAM_colorado1.csv ../../Data/Colorado2014/colorado1.csv >> outputsColorado/consoleout_colorado1.txt
 cp outputGTSAM.csv outputsColorado/outputGTSAM_colorado1.csv
 cp outputGTSAM.xls outputsColorado/outputGTSAM_colorado1.xls
