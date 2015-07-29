@@ -1,3 +1,21 @@
+rm outputsAntarctica/consoleout_jetty1.txt
+rm outputsAntarctica/consoleout_jetty2.txt
+rm outputsAntarctica/consoleout_jetty3a.txt
+rm outputsAntarctica/consoleout_jetty3c.txt
+rm outputsAntarctica/consoleout_jetty4.txt
+rm outputsAntarctica/consoleout_jetty5.txt
+rm outputsAntarctica/consoleout_jetty6.txt
+rm outputsAntarctica/consoleout_jetty7.txt
+rm outputsAntarctica/consoleout_jetty8.txt
+rm outputsAntarctica/consoleout_jetty9.txt
+rm outputsAntarctica/consoleout_jetty10.txt
+rm outputsAntarctica/consoleout_jetty11a.txt
+rm outputsAntarctica/consoleout_jetty11c.txt
+rm outputsAntarctica/consoleout_jetty11e.txt
+rm outputsAntarctica/consoleout_jetty11g.txt
+
+##############################
+
 ./CamSonarFusion ../../opencv-as/shiftEstSonarOnly/outputsAntarctica/outputSonarGTSAM_jetty1.csv ../../opencv-as/shiftEstVideoOnly/outputsAntarctica/outputCameraGTSAM_jetty1.csv ../../Data/Antarctica2014/jetty1.csv >> outputsAntarctica/consoleout_jetty1.txt
 cp outputGTSAM.csv outputsAntarctica/outputGTSAM_jetty1.csv
 cp outputGTSAM.xls outputsAntarctica/outputGTSAM_jetty1.xls
