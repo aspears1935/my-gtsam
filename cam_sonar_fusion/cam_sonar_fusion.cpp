@@ -80,6 +80,7 @@ using namespace std;
 using namespace gtsam;
 
 #define VERBOSE true
+#define ZERO_ZROLLPITCH true
 //#define CAM_CORNERS_WEIGHT 0.3333333
 //#define CAM_MATCHES_WEIGHT 0.3333333
 //#define CAM_INLIERS_WEIGHT 0.3333333
@@ -538,6 +539,7 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
       yunit_arr[i] = (float)(atof(tmpstring.c_str()));
       getline(inFileCam,tmpstring,';');
       zunit_arr[i] = (float)(atof(tmpstring.c_str()));
+
       //Convert to unit vector if not
       //      cout << "x,y,z unit: " << xunit_arr[i] << "," << yunit_arr[i] << "," << zunit_arr[i] << endl;
       double unit_mag = sqrt(xunit_arr[i]*xunit_arr[i]+yunit_arr[i]*yunit_arr[i]+zunit_arr[i]*zunit_arr[i]);
@@ -565,6 +567,14 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 
       getline(inFileCam,tmpstring,';');
       estValid_arr[i] = (int)(atoi(tmpstring.c_str()));
+
+      //Discard Z, Roll, Pitch if needed
+      if(ZERO_ZROLLPITCH)
+	{
+	  zunit_arr[i] = 0;
+	  roll_arr[i] = 0;
+	  pitch_arr[i] = 0;
+	}
 
       getline(inFileCam,tmpstring,'\n'); //Discard rest of line
       if(VERBOSE)
