@@ -80,7 +80,6 @@ using namespace std;
 using namespace gtsam;
 
 #define VERBOSE true
-#define ZERO_ZROLLPITCH true
 //#define CAM_CORNERS_WEIGHT 0.3333333
 //#define CAM_MATCHES_WEIGHT 0.3333333
 //#define CAM_INLIERS_WEIGHT 0.3333333
@@ -91,6 +90,8 @@ using namespace gtsam;
 #define CAM_INLIERS_THRESH 200 //Number of inliers considered to hit the low noise plateau /
 #define TIME_NODE_MULT 100 //Time to node number multiplier. ie t=0.1->node 1 if mult=10
 #define PRINT_UNIX_TIMES false //Print abs unix timestamps instead of zero-based node numbers
+#define ZERO_ZROLLPITCH true
+#define AVERAGE_INITIAL_VALUES true
 
 int main(int argc, char** argv) 
 {
@@ -717,7 +718,8 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   Values initialSon;
   Values initialSonRobust;
   Values initialCam;
-  Values initialCamSon;
+  Values initialCamRobust;
+  //Values initialCamSon;
 
   //NOTE: addedErr - This is confusing. When both before and after prior addedErr is 7 or less, it has no effect - all the same. When 8 before and after, it begins to change the output. When it is 10, it changes a lot. When 150, doesn't change at all and back to no effect like 0. This is for the simulated data input rectangle200x100 and the sonar only data (the fused data performs differently). Documentation says that if there is only one solution, it should be found no matter what initial guess - but needs to be close to soln if multiple solutions.
   double addedErr = 0; //Debug: should be 0
@@ -726,7 +728,8 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   initialSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
   initialSonRobust.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
   initialCam.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
-  initialCamSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+  initialCamRobust.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+  //initialCamSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
 
   //Note: changed just this and didn't effect output of sonar results 0-10
   //addedErr = 0; //Debug: should be 0
@@ -789,7 +792,13 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   double yaw_sum_cam=0;
   double x_sum_camSon = 0;
   double y_sum_camSon = 0;
-  double z_sum_camSon = 0;  
+  double z_sum_camSon = 0;
+  double x_sum_camRobust=0;
+  double y_sum_camRobust=0;
+  double z_sum_camRobust=0;
+  double roll_sum_camRobust=0;
+  double pitch_sum_camRobust=0;
+  double yaw_sum_camRobust=0;  
   double timeDiffSon = 0;
   double camNoiseTransl = 0.0001;
   double camNoiseRot = 0.00001;
@@ -967,8 +976,25 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 		  roll_camRobust = roll_arr[iCam2];
 		  pitch_camRobust = pitch_arr[iCam2];
 		  yaw_camRobust = yaw_arr[iCam2];
+
+		  x_sum_camRobust += xunit_arr[iCam2];
+		  y_sum_camRobust += yunit_arr[iCam2];
+		  z_sum_camRobust += zunit_arr[iCam2];
+		  roll_sum_camRobust += roll_arr[iCam2];
+		  pitch_sum_camRobust += pitch_arr[iCam2];
+		  yaw_sum_camRobust += yaw_arr[iCam2];
+
 		  //		  prev_camNoiseTranslRobust = camSonNoiseTransl;
 		  //prev_camNoiseRotRobust = camNoiseRot;
+		}
+	      else
+		{
+		  x_sum_camRobust += xunit_camRobust;
+		  y_sum_camRobust += yunit_camRobust;
+		  z_sum_camRobust += zunit_camRobust;
+		  roll_sum_camRobust += roll_camRobust;
+		  pitch_sum_camRobust += pitch_camRobust;
+		  yaw_sum_camRobust += yaw_camRobust;
 		}
 	      
 	      //Update prev vbls:
@@ -1155,9 +1181,14 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 	      graphCamOnly.add(BetweenFactor<Pose3>(t1cam_arr[iCam2], t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_arr[iCam2],pitch_arr[iCam2],roll_arr[iCam2]), Point3(xunit_arr[iCam2],yunit_arr[iCam2],zunit_arr[iCam2])), cameraSonarNoise6));//zeroNoise6));//cameraNoise6)); //Have to add this or else underconstrained
 	      
 	      initialCam.insert(t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_sum_cam+addedErr,pitch_sum_cam+addedErr,roll_sum_cam+addedErr), Point3(x_sum_cam+addedErr,y_sum_cam+addedErr,z_sum_cam+addedErr)));
+	      initialCamRobust.insert(t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_sum_camRobust+addedErr,pitch_sum_camRobust+addedErr,roll_sum_camRobust+addedErr), Point3(x_sum_camRobust+addedErr,y_sum_camRobust+addedErr,z_sum_camRobust+addedErr)));
+	      
 	      //Below is for the fused estimates with sonar magnitudes
-	      initialCamSon.insert(t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_sum_cam+addedErr,pitch_sum_cam+addedErr,roll_sum_cam+addedErr), Point3(x_sum_camSon+addedErr,y_sum_camSon+addedErr,z_sum_camSon+addedErr)));
-	      initial.insert(t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_sum_cam+addedErr,pitch_sum_cam+addedErr,roll_sum_cam+addedErr), Point3(x_sum_camSon+addedErr,y_sum_camSon+addedErr,z_sum_camSon+addedErr)));
+	      //initialCamSon.insert(t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_sum_cam+addedErr,pitch_sum_cam+addedErr,roll_sum_cam+addedErr), Point3(x_sum_camSon+addedErr,y_sum_camSon+addedErr,z_sum_camSon+addedErr)));
+	      if(AVERAGE_INITIAL_VALUES) //Average sonar and camera estimates
+		initial.insert(t2cam_arr[iCam2], Pose3(Rot3::ypr((yaw_sum_camRobust+yaw_sum_sonRobust)/2+addedErr,pitch_sum_camRobust+addedErr,roll_sum_camRobust+addedErr), Point3((x_sum_camSon+x_sum_sonRobust)/2+addedErr,(y_sum_camSon+y_sum_sonRobust)/2+addedErr,z_sum_camSon+addedErr)));
+	      else //Else use camSon estimates only
+		initial.insert(t2cam_arr[iCam2], Pose3(Rot3::ypr(yaw_sum_camRobust+addedErr,pitch_sum_camRobust+addedErr,roll_sum_camRobust+addedErr), Point3(x_sum_camSon+addedErr,y_sum_camSon+addedErr,z_sum_camSon+addedErr)));
 	      
 	      if(VERBOSE)
 		{
@@ -1364,9 +1395,9 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   // optimize using Levenberg-Marquardt optimization
   Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
   cout << "Optimized Fusion Graph" << endl;
-  Values resultSonOnly = LevenbergMarquardtOptimizer(graphSonOnly, initialSon).optimize();
+  Values resultSonOnly = LevenbergMarquardtOptimizer(graphSonOnly, initialSonRobust).optimize();
   cout << "Optimized Sonar Graph" << endl;
-  Values resultCamOnly = LevenbergMarquardtOptimizer(graphCamOnly, initialCam).optimize();
+  Values resultCamOnly = LevenbergMarquardtOptimizer(graphCamOnly, initialCamRobust).optimize();
   cout << "Optimized Camera Graph" << endl;
 
   // result.print("Final Result:\n");
