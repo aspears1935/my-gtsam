@@ -1424,29 +1424,169 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
       outfile << 0 << ";"; 
       outfilexls << 0 << "\t";
     }
-  outfile << result.at<Pose3>(0).x() << ";" << result.at<Pose3>(0).y() << ";" << result.at<Pose3>(0).z() << ";" << result.at<Pose3>(0).rotation().roll()*180/PI << ";" << result.at<Pose3>(0).rotation().pitch()*180/PI << ";" << result.at<Pose3>(0).rotation().yaw()*180/PI << ";";
-  outfile << initial.at<Pose3>(0).x() << ";" << initial.at<Pose3>(0).y() << ";" << initial.at<Pose3>(0).z() << ";" << initial.at<Pose3>(0).rotation().roll()*180/PI << ";" << initial.at<Pose3>(0).rotation().pitch()*180/PI << ";" << initial.at<Pose3>(0).rotation().yaw()*180/PI << ";";
 
-  outfilexls << result.at<Pose3>(0).x() << "\t" << result.at<Pose3>(0).y() << "\t" << result.at<Pose3>(0).z() << "\t" << result.at<Pose3>(0).rotation().roll()*180/PI << "\t" << result.at<Pose3>(0).rotation().pitch()*180/PI << "\t" << result.at<Pose3>(0).rotation().yaw()*180/PI << "\t";
-  outfilexls << initial.at<Pose3>(0).x() << "\t" << initial.at<Pose3>(0).y() << "\t" << initial.at<Pose3>(0).z() << "\t" << initial.at<Pose3>(0).rotation().roll()*180/PI << "\t" << initial.at<Pose3>(0).rotation().pitch()*180/PI << "\t" << initial.at<Pose3>(0).rotation().yaw()*180/PI << "\t";
+  double xprint;
+  double yprint;
+  double zprint;
+  double rollprint;
+  double pitchprint;
+  double yawprint;
+  double xinitprint;
+  double yinitprint;
+  double zinitprint;
+  double rollinitprint;
+  double pitchinitprint;
+  double yawinitprint;
 
-  cout << 0 << " Son Result: x,y,yaw = " << resultSonOnly.at<Pose3>(0).x() << "," << resultSonOnly.at<Pose3>(0).y() << "," << resultSonOnly.at<Pose3>(0).rotation().yaw()*180/PI << endl;
-  outfile << resultSonOnly.at<Pose3>(0).x() << ";" << resultSonOnly.at<Pose3>(0).y() << ";" << resultSonOnly.at<Pose3>(0).z() << ";" << resultSonOnly.at<Pose3>(0).rotation().roll()*180/PI << ";" << resultSonOnly.at<Pose3>(0).rotation().pitch()*180/PI << ";" << resultSonOnly.at<Pose3>(0).rotation().yaw()*180/PI << ";";
-  outfile << initialSon.at<Pose3>(0).x() << ";" << initialSon.at<Pose3>(0).y() << ";" << initialSon.at<Pose3>(0).z() << ";" << initialSon.at<Pose3>(0).rotation().roll()*180/PI << ";" << initialSon.at<Pose3>(0).rotation().pitch()*180/PI << ";" << initialSon.at<Pose3>(0).rotation().yaw()*180/PI << ";";
+  xprint = result.at<Pose3>(0).x();
+  yprint = result.at<Pose3>(0).y();
+  zprint = result.at<Pose3>(0).z();
+  rollprint = result.at<Pose3>(0).rotation().roll()*180/PI;
+  pitchprint = result.at<Pose3>(0).rotation().pitch()*180/PI;
+  yawprint = result.at<Pose3>(0).rotation().yaw()*180/PI;
 
-  outfilexls << resultSonOnly.at<Pose3>(0).x() << "\t" << resultSonOnly.at<Pose3>(0).y() << "\t" << resultSonOnly.at<Pose3>(0).z() << "\t" << resultSonOnly.at<Pose3>(0).rotation().roll()*180/PI << "\t" << resultSonOnly.at<Pose3>(0).rotation().pitch()*180/PI << "\t" << resultSonOnly.at<Pose3>(0).rotation().yaw()*180/PI << "\t";
-  outfilexls << initialSon.at<Pose3>(0).x() << "\t" << initialSon.at<Pose3>(0).y() << "\t" << initialSon.at<Pose3>(0).z() << "\t" << initialSon.at<Pose3>(0).rotation().roll()*180/PI << "\t" << initialSon.at<Pose3>(0).rotation().pitch()*180/PI << "\t" << initialSon.at<Pose3>(0).rotation().yaw()*180/PI << "\t";
+  xinitprint = initial.at<Pose3>(0).x();
+  yinitprint = initial.at<Pose3>(0).y();
+  zinitprint = initial.at<Pose3>(0).z();
+  rollinitprint = initial.at<Pose3>(0).rotation().roll()*180/PI;
+  pitchinitprint = initial.at<Pose3>(0).rotation().pitch()*180/PI;
+  yawinitprint = initial.at<Pose3>(0).rotation().yaw()*180/PI;
 
-  cout << 0 << " Cam Result: x,y,yaw = " << resultCamOnly.at<Pose3>(0).x() << "," << resultCamOnly.at<Pose3>(0).y() << "," << resultCamOnly.at<Pose3>(0).rotation().yaw()*180/PI << endl;
-  outfile << resultCamOnly.at<Pose3>(0).x() << ";" << resultCamOnly.at<Pose3>(0).y() << ";" << resultCamOnly.at<Pose3>(0).z() << ";" << resultCamOnly.at<Pose3>(0).rotation().roll()*180/PI << ";" << resultCamOnly.at<Pose3>(0).rotation().pitch()*180/PI << ";" << resultCamOnly.at<Pose3>(0).rotation().yaw()*180/PI << ";";
-  outfile << initialCam.at<Pose3>(0).x() << ";" << initialCam.at<Pose3>(0).y() << ";" << initialCam.at<Pose3>(0).z() << ";" << initialCam.at<Pose3>(0).rotation().roll()*180/PI << ";" << initialCam.at<Pose3>(0).rotation().pitch()*180/PI << ";" << initialCam.at<Pose3>(0).rotation().yaw()*180/PI << ";";
+  if(abs(xprint) < 0.001)
+    xprint = 0;
+  if(abs(yprint) < 0.001)
+    yprint = 0;
+  if(abs(zprint) < 0.001)
+    zprint = 0;
+  if(abs(rollprint) < 0.001)
+    rollprint = 0;
+  if(abs(pitchprint) < 0.001)
+    pitchprint = 0;
+  if(abs(yawprint) < 0.001)
+    yawprint = 0;
+  
+  if(abs(xinitprint) < 0.001)
+    xinitprint = 0;
+  if(abs(yinitprint) < 0.001)
+    yinitprint = 0;
+  if(abs(zinitprint) < 0.001)
+    zinitprint = 0;
+  if(abs(rollinitprint) < 0.001)
+    rollinitprint = 0;
+  if(abs(pitchinitprint) < 0.001)
+    pitchinitprint = 0;
+  if(abs(yawinitprint) < 0.001)
+    yawinitprint = 0;
+  
+  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
+
+  outfilexls << xprint << "\t" << yprint << "\t" << zprint << "\t" << rollprint << "\t" << pitchprint << "\t" << yawprint << "\t";
+  outfilexls << xinitprint << "\t" << yinitprint << "\t" << zinitprint << "\t" << rollinitprint << "\t" << pitchinitprint << "\t" << yawinitprint << "\t";
+
+  //------------------------------------------------------------
+
+  xprint = resultSonOnly.at<Pose3>(0).x();
+  yprint = resultSonOnly.at<Pose3>(0).y();
+  zprint = resultSonOnly.at<Pose3>(0).z();
+  rollprint = resultSonOnly.at<Pose3>(0).rotation().roll()*180/PI;
+  pitchprint = resultSonOnly.at<Pose3>(0).rotation().pitch()*180/PI;
+  yawprint = resultSonOnly.at<Pose3>(0).rotation().yaw()*180/PI;
+
+  xinitprint = initialSon.at<Pose3>(0).x();
+  yinitprint = initialSon.at<Pose3>(0).y();
+  zinitprint = initialSon.at<Pose3>(0).z();
+  rollinitprint = initialSon.at<Pose3>(0).rotation().roll()*180/PI;
+  pitchinitprint = initialSon.at<Pose3>(0).rotation().pitch()*180/PI;
+  yawinitprint = initialSon.at<Pose3>(0).rotation().yaw()*180/PI;
+
+  if(abs(xprint) < 0.001)
+    xprint = 0;
+  if(abs(yprint) < 0.001)
+    yprint = 0;
+  if(abs(zprint) < 0.001)
+    zprint = 0;
+  if(abs(rollprint) < 0.001)
+    rollprint = 0;
+  if(abs(pitchprint) < 0.001)
+    pitchprint = 0;
+  if(abs(yawprint) < 0.001)
+    yawprint = 0;
+  
+  if(abs(xinitprint) < 0.001)
+    xinitprint = 0;
+  if(abs(yinitprint) < 0.001)
+    yinitprint = 0;
+  if(abs(zinitprint) < 0.001)
+    zinitprint = 0;
+  if(abs(rollinitprint) < 0.001)
+    rollinitprint = 0;
+  if(abs(pitchinitprint) < 0.001)
+    pitchinitprint = 0;
+  if(abs(yawinitprint) < 0.001)
+    yawinitprint = 0;
+  
+  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
+
+  outfilexls << xprint << "\t" << yprint << "\t" << zprint << "\t" << rollprint << "\t" << pitchprint << "\t" << yawprint << "\t";
+  outfilexls << xinitprint << "\t" << yinitprint << "\t" << zinitprint << "\t" << rollinitprint << "\t" << pitchinitprint << "\t" << yawinitprint << "\t";
+
+  //----------------------------------------------------------
+
+  xprint = resultCamOnly.at<Pose3>(0).x();
+  yprint = resultCamOnly.at<Pose3>(0).y();
+  zprint = resultCamOnly.at<Pose3>(0).z();
+  rollprint = resultCamOnly.at<Pose3>(0).rotation().roll()*180/PI;
+  pitchprint = resultCamOnly.at<Pose3>(0).rotation().pitch()*180/PI;
+  yawprint = resultCamOnly.at<Pose3>(0).rotation().yaw()*180/PI;
+
+  xinitprint = initialCam.at<Pose3>(0).x();
+  yinitprint = initialCam.at<Pose3>(0).y();
+  zinitprint = initialCam.at<Pose3>(0).z();
+  rollinitprint = initialCam.at<Pose3>(0).rotation().roll()*180/PI;
+  pitchinitprint = initialCam.at<Pose3>(0).rotation().pitch()*180/PI;
+  yawinitprint = initialCam.at<Pose3>(0).rotation().yaw()*180/PI;
+
+  if(abs(xprint) < 0.001)
+    xprint = 0;
+  if(abs(yprint) < 0.001)
+    yprint = 0;
+  if(abs(zprint) < 0.001)
+    zprint = 0;
+  if(abs(rollprint) < 0.001)
+    rollprint = 0;
+  if(abs(pitchprint) < 0.001)
+    pitchprint = 0;
+  if(abs(yawprint) < 0.001)
+    yawprint = 0;
+  
+  if(abs(xinitprint) < 0.001)
+    xinitprint = 0;
+  if(abs(yinitprint) < 0.001)
+    yinitprint = 0;
+  if(abs(zinitprint) < 0.001)
+    zinitprint = 0;
+  if(abs(rollinitprint) < 0.001)
+    rollinitprint = 0;
+  if(abs(pitchinitprint) < 0.001)
+    pitchinitprint = 0;
+  if(abs(yawinitprint) < 0.001)
+    yawinitprint = 0;
+  
+  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint << ";" << pitchprint << ";" << yawprint << ";";
+  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint << ";" << pitchinitprint << ";" << yawinitprint << ";";
+
+  outfilexls << xprint << "\t" << yprint << "\t" << zprint << "\t" << rollprint << "\t" << pitchprint << "\t" << yawprint << "\t";
+  outfilexls << xinitprint << "\t" << yinitprint << "\t" << zinitprint << "\t" << rollinitprint << "\t" << pitchinitprint << "\t" << yawinitprint << "\t";
+
+  //-----------------------------------------------------------------
+
   outfile << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";" << ZERO_NOISE << ";";
   if(argc > 3)
     outfile << xtruth_arr[0] << ";" << ytruth_arr[0] << ";" << yawtruth_arr[0] << ";";
   outfile << endl;
 
-  outfilexls << resultCamOnly.at<Pose3>(0).x() << "\t" << resultCamOnly.at<Pose3>(0).y() << "\t" << resultCamOnly.at<Pose3>(0).z() << "\t" << resultCamOnly.at<Pose3>(0).rotation().roll()*180/PI << "\t" << resultCamOnly.at<Pose3>(0).rotation().pitch()*180/PI << "\t" << resultCamOnly.at<Pose3>(0).rotation().yaw()*180/PI << "\t";
-  outfilexls << initialCam.at<Pose3>(0).x() << "\t" << initialCam.at<Pose3>(0).y() << "\t" << initialCam.at<Pose3>(0).z() << "\t" << initialCam.at<Pose3>(0).rotation().roll()*180/PI << "\t" << initialCam.at<Pose3>(0).rotation().pitch()*180/PI << "\t" << initialCam.at<Pose3>(0).rotation().yaw()*180/PI << "\t";
   outfilexls << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t" << ZERO_NOISE << "\t";
   if(argc > 3)
     outfilexls << xtruth_arr[0] << "\t" << ytruth_arr[0] << "\t" << yawtruth_arr[0] << "\t";
@@ -1466,18 +1606,18 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
     {
       int nodeNum;
 
-      double xprint;
-      double yprint;
-      double zprint;
-      double rollprint;
-      double pitchprint;
-      double yawprint;
-      double xinitprint;
-      double yinitprint;
-      double zinitprint;
-      double rollinitprint;
-      double pitchinitprint;
-      double yawinitprint;
+      xprint;
+      yprint;
+      zprint;
+      rollprint;
+      pitchprint;
+      yawprint;
+      xinitprint;
+      yinitprint;
+      zinitprint;
+      rollinitprint;
+      pitchinitprint;
+      yawinitprint;
 
       if((!doneSon)&&(!doneCam)) //Both files still have data
 	nodeNum = min(t2son_arr[iSon],t2cam_arr[iCam]); // Get the next node. It will be the minimum of the next son and cam values.
