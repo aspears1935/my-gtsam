@@ -1411,6 +1411,18 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   Marginals marginalsCamOnly(graphCamOnly, resultCamOnly);
   cout << "Calculated Camera Marginals" << endl;
 
+  double xprint;
+  double yprint;
+  double zprint;
+  double rollprint;
+  double pitchprint;
+  double yawprint;
+  double xinitprint;
+  double yinitprint;
+  double zinitprint;
+  double rollinitprint;
+  double pitchinitprint;
+  double yawinitprint;
 
   cout << 0 << " Result: x,y,yaw = " << result.at<Pose3>(0).x() << "," << result.at<Pose3>(0).y() << "," << result.at<Pose3>(0).rotation().yaw() << endl;
 
@@ -1424,19 +1436,6 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
       outfile << 0 << ";"; 
       outfilexls << 0 << "\t";
     }
-
-  double xprint;
-  double yprint;
-  double zprint;
-  double rollprint;
-  double pitchprint;
-  double yawprint;
-  double xinitprint;
-  double yinitprint;
-  double zinitprint;
-  double rollinitprint;
-  double pitchinitprint;
-  double yawinitprint;
 
   xprint = result.at<Pose3>(0).x();
   yprint = result.at<Pose3>(0).y();
@@ -1602,22 +1601,69 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   double prev_son_yaw = 0;
   double prev_fuse_yaw = 0;
 
+  double xprintFuse;
+  double yprintFuse;
+  double zprintFuse;
+  double rollprintFuse;
+  double pitchprintFuse;
+  double yawprintFuse;
+  double xinitprintFuse;
+  double yinitprintFuse;
+  double zinitprintFuse;
+  double rollinitprintFuse;
+  double pitchinitprintFuse;
+  double yawinitprintFuse;
+
+  double xprintSon;
+  double yprintSon;
+  double zprintSon;
+  double rollprintSon;
+  double pitchprintSon;
+  double yawprintSon;
+  double xinitprintSon;
+  double yinitprintSon;
+  double zinitprintSon;
+  double rollinitprintSon;
+  double pitchinitprintSon;
+  double yawinitprintSon;
+
+  double xprintCam;
+  double yprintCam;
+  double zprintCam;
+  double rollprintCam;
+  double pitchprintCam;
+  double yawprintCam;
+  double xinitprintCam;
+  double yinitprintCam;
+  double zinitprintCam;
+  double rollinitprintCam;
+  double pitchinitprintCam;
+  double yawinitprintCam;
+
+  double xprintFuseNoise;
+  double yprintFuseNoise;
+  double zprintFuseNoise;
+  double rollprintFuseNoise;
+  double pitchprintFuseNoise;
+  double yawprintFuseNoise;
+
+  double xprintSonNoise;
+  double yprintSonNoise;
+  double zprintSonNoise;
+  double rollprintSonNoise;
+  double pitchprintSonNoise;
+  double yawprintSonNoise;
+
+  double xprintCamNoise;
+  double yprintCamNoise;
+  double zprintCamNoise;
+  double rollprintCamNoise;
+  double pitchprintCamNoise;
+  double yawprintCamNoise;
+
   do  //do while not finished with BOTH files
     {
       int nodeNum;
-
-      xprint;
-      yprint;
-      zprint;
-      rollprint;
-      pitchprint;
-      yawprint;
-      xinitprint;
-      yinitprint;
-      zinitprint;
-      rollinitprint;
-      pitchinitprint;
-      yawinitprint;
 
       if((!doneSon)&&(!doneCam)) //Both files still have data
 	nodeNum = min(t2son_arr[iSon],t2cam_arr[iCam]); // Get the next node. It will be the minimum of the next son and cam values.
@@ -1636,55 +1682,55 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
       //-------------Fused----------------//
       if(t2cam_arr[iCam]==nodeNum)
 	{
-	  xprint = result.at<Pose3>(nodeNum).x();
-	  yprint = result.at<Pose3>(nodeNum).y();
-	  zprint = result.at<Pose3>(nodeNum).z();
-	  rollprint = result.at<Pose3>(nodeNum).rotation().roll();
-	  pitchprint = result.at<Pose3>(nodeNum).rotation().pitch();
-	  yawprint = result.at<Pose3>(nodeNum).rotation().yaw();
+	  xprintFuse = result.at<Pose3>(nodeNum).x();
+	  yprintFuse = result.at<Pose3>(nodeNum).y();
+	  zprintFuse = result.at<Pose3>(nodeNum).z();
+	  rollprintFuse = result.at<Pose3>(nodeNum).rotation().roll();
+	  pitchprintFuse = result.at<Pose3>(nodeNum).rotation().pitch();
+	  yawprintFuse = result.at<Pose3>(nodeNum).rotation().yaw();
 	  
 	  //Initial Guess: 
-	  xinitprint = initial.at<Pose3>(nodeNum).x();
-	  yinitprint = initial.at<Pose3>(nodeNum).y();
-	  zinitprint = initial.at<Pose3>(nodeNum).z();
-	  rollinitprint = initial.at<Pose3>(nodeNum).rotation().roll();
-	  pitchinitprint = initial.at<Pose3>(nodeNum).rotation().pitch();
-	  yawinitprint = initial.at<Pose3>(nodeNum).rotation().yaw();
+	  xinitprintFuse = initial.at<Pose3>(nodeNum).x();
+	  yinitprintFuse = initial.at<Pose3>(nodeNum).y();
+	  zinitprintFuse = initial.at<Pose3>(nodeNum).z();
+	  rollinitprintFuse = initial.at<Pose3>(nodeNum).rotation().roll();
+	  pitchinitprintFuse = initial.at<Pose3>(nodeNum).rotation().pitch();
+	  yawinitprintFuse = initial.at<Pose3>(nodeNum).rotation().yaw();
 	  
-	  if(abs(xprint) < 0.001)
-	    xprint = 0;
-	  if(abs(yprint) < 0.001)
-	    yprint = 0;
-	  if(abs(zprint) < 0.001)
-	    zprint = 0;
-	  if(abs(rollprint) < 0.001)
-	    rollprint = 0;
-	  if(abs(pitchprint) < 0.001)
-	    pitchprint = 0;
-	  if(abs(yawprint) < 0.001)
-	    yawprint = 0;
+	  if(abs(xprintFuse) < 0.001)
+	    xprintFuse = 0;
+	  if(abs(yprintFuse) < 0.001)
+	    yprintFuse = 0;
+	  if(abs(zprintFuse) < 0.001)
+	    zprintFuse = 0;
+	  if(abs(rollprintFuse) < 0.001)
+	    rollprintFuse = 0;
+	  if(abs(pitchprintFuse) < 0.001)
+	    pitchprintFuse = 0;
+	  if(abs(yawprintFuse) < 0.001)
+	    yawprintFuse = 0;
 	  
-	  if(abs(xinitprint) < 0.001)
-	    xinitprint = 0;
-	  if(abs(yinitprint) < 0.001)
-	    yinitprint = 0;
-	  if(abs(zinitprint) < 0.001)
-	    zinitprint = 0;
-	  if(abs(rollinitprint) < 0.001)
-	    rollinitprint = 0;
-	  if(abs(pitchinitprint) < 0.001)
-	    pitchinitprint = 0;
-	  if(abs(yawinitprint) < 0.001)
-	    yawinitprint = 0;
+	  if(abs(xinitprintFuse) < 0.001)
+	    xinitprintFuse = 0;
+	  if(abs(yinitprintFuse) < 0.001)
+	    yinitprintFuse = 0;
+	  if(abs(zinitprintFuse) < 0.001)
+	    zinitprintFuse = 0;
+	  if(abs(rollinitprintFuse) < 0.001)
+	    rollinitprintFuse = 0;
+	  if(abs(pitchinitprintFuse) < 0.001)
+	    pitchinitprintFuse = 0;
+	  if(abs(yawinitprintFuse) < 0.001)
+	    yawinitprintFuse = 0;
 
-	  if((yawprint - prev_fuse_yaw) > 3*PI/4)
-	    yawprint -= 2*PI;
-	  else if((yawprint - prev_fuse_yaw) < -3*PI/4)
-	    yawprint += 2*PI;
+	  if((yawprintFuse - prev_fuse_yaw) > 3*PI/4)
+	    yawprintFuse -= 2*PI;
+	  else if((yawprintFuse - prev_fuse_yaw) < -3*PI/4)
+	    yawprintFuse += 2*PI;
  
-	  prev_fuse_yaw = yawprint;	  
+	  prev_fuse_yaw = yawprintFuse;	  
 
-	  cout << nodeNum << " Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
+	  cout << nodeNum << " Result: x,y,yaw = " << xprintFuse << "," << yprintFuse << "," << yawprintFuse << endl;
 	  
 	  if(PRINT_UNIX_TIMES)
 	    {
@@ -1696,11 +1742,11 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 	      outfile << nodeNum << ";"; 
 	      outfilexls << nodeNum << "\t"; 
 	    }
-	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint*180/PI << ";" << pitchprint*180/PI << ";" << yawprint*180/PI << ";";
-	  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint*180/PI << ";" << pitchinitprint*180/PI << ";" << yawinitprint*180/PI << ";";
+	  outfile << xprintFuse << ";" << yprintFuse << ";" << zprintFuse << ";" << rollprintFuse*180/PI << ";" << pitchprintFuse*180/PI << ";" << yawprintFuse*180/PI << ";";
+	  outfile << xinitprintFuse << ";" << yinitprintFuse << ";" << zinitprintFuse << ";" << rollinitprintFuse*180/PI << ";" << pitchinitprintFuse*180/PI << ";" << yawinitprintFuse*180/PI << ";";
 
-	  outfilexls << xprint << "\t" << yprint << "\t" << zprint << "\t" << rollprint*180/PI << "\t" << pitchprint*180/PI << "\t" << yawprint*180/PI << "\t";
-	  outfilexls << xinitprint << "\t" << yinitprint << "\t" << zinitprint << "\t" << rollinitprint*180/PI << "\t" << pitchinitprint*180/PI << "\t" << yawinitprint*180/PI << "\t";
+	  outfilexls << xprintFuse << "\t" << yprintFuse << "\t" << zprintFuse << "\t" << rollprintFuse*180/PI << "\t" << pitchprintFuse*180/PI << "\t" << yawprintFuse*180/PI << "\t";
+	  outfilexls << xinitprintFuse << "\t" << yinitprintFuse << "\t" << zinitprintFuse << "\t" << rollinitprintFuse*180/PI << "\t" << pitchinitprintFuse*180/PI << "\t" << yawinitprintFuse*180/PI << "\t";
 	}
       else
 	{
@@ -1714,143 +1760,158 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 	      outfile << nodeNum << ";"; 
 	      outfilexls << nodeNum << "\t";
 	    }
-	  outfile << ";;;;;;";
-	  outfile << ";;;;;;";
 
-	  outfilexls << "\t\t\t\t\t\t";
-	  outfilexls << "\t\t\t\t\t\t";
+	  //outfile << ";;;;;;";
+	  //outfile << ";;;;;;";
+	  //outfilexls << "\t\t\t\t\t\t";
+	  //outfilexls << "\t\t\t\t\t\t";
+
+	  outfile << xprintFuse << ";" << yprintFuse << ";" << zprintFuse << ";" << rollprintFuse*180/PI << ";" << pitchprintFuse*180/PI << ";" << yawprintFuse*180/PI << ";";
+	  outfile << xinitprintFuse << ";" << yinitprintFuse << ";" << zinitprintFuse << ";" << rollinitprintFuse*180/PI << ";" << pitchinitprintFuse*180/PI << ";" << yawinitprintFuse*180/PI << ";";
+
+	  outfilexls << xprintFuse << "\t" << yprintFuse << "\t" << zprintFuse << "\t" << rollprintFuse*180/PI << "\t" << pitchprintFuse*180/PI << "\t" << yawprintFuse*180/PI << "\t";
+	  outfilexls << xinitprintFuse << "\t" << yinitprintFuse << "\t" << zinitprintFuse << "\t" << rollinitprintFuse*180/PI << "\t" << pitchinitprintFuse*180/PI << "\t" << yawinitprintFuse*180/PI << "\t";
 	}
 
       //-------------SonOnly-------------//
       if(t2son_arr[iSon]==nodeNum)
 	{
-	  xprint = resultSonOnly.at<Pose3>(t2son_arr[iSon]).x();
-	  yprint = resultSonOnly.at<Pose3>(t2son_arr[iSon]).y();
-	  zprint = resultSonOnly.at<Pose3>(t2son_arr[iSon]).z();
-	  rollprint = resultSonOnly.at<Pose3>(t2son_arr[iSon]).rotation().roll();
-	  pitchprint = resultSonOnly.at<Pose3>(t2son_arr[iSon]).rotation().pitch();
-	  yawprint = resultSonOnly.at<Pose3>(t2son_arr[iSon]).rotation().yaw();
+	  xprintSon = resultSonOnly.at<Pose3>(t2son_arr[iSon]).x();
+	  yprintSon = resultSonOnly.at<Pose3>(t2son_arr[iSon]).y();
+	  zprintSon = resultSonOnly.at<Pose3>(t2son_arr[iSon]).z();
+	  rollprintSon = resultSonOnly.at<Pose3>(t2son_arr[iSon]).rotation().roll();
+	  pitchprintSon = resultSonOnly.at<Pose3>(t2son_arr[iSon]).rotation().pitch();
+	  yawprintSon = resultSonOnly.at<Pose3>(t2son_arr[iSon]).rotation().yaw();
 
 	  //Initial Guess: 
-	  double xinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).x();
-	  double yinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).y();
-	  double zinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).z();
-	  double rollinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).rotation().roll();
-	  double pitchinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).rotation().pitch();
-	  double yawinitprint = initialSon.at<Pose3>(t2son_arr[iSon]).rotation().yaw();
+	  xinitprintSon = initialSon.at<Pose3>(t2son_arr[iSon]).x();
+	  yinitprintSon = initialSon.at<Pose3>(t2son_arr[iSon]).y();
+	  zinitprintSon = initialSon.at<Pose3>(t2son_arr[iSon]).z();
+	  rollinitprintSon = initialSon.at<Pose3>(t2son_arr[iSon]).rotation().roll();
+	  pitchinitprintSon = initialSon.at<Pose3>(t2son_arr[iSon]).rotation().pitch();
+	  yawinitprintSon = initialSon.at<Pose3>(t2son_arr[iSon]).rotation().yaw();
 	  
-	  if(abs(xprint) < 0.001)
-	    xprint = 0;
-	  if(abs(yprint) < 0.001)
-	    yprint = 0;
-	  if(abs(zprint) < 0.001)
-	    zprint = 0;
-	  if(abs(rollprint) < 0.001)
-	    rollprint = 0;
-	  if(abs(pitchprint) < 0.001)
-	    pitchprint = 0;
-	  if(abs(yawprint) < 0.001)
-	    yawprint = 0;
+	  if(abs(xprintSon) < 0.001)
+	    xprintSon = 0;
+	  if(abs(yprintSon) < 0.001)
+	    yprintSon = 0;
+	  if(abs(zprintSon) < 0.001)
+	    zprintSon = 0;
+	  if(abs(rollprintSon) < 0.001)
+	    rollprintSon = 0;
+	  if(abs(pitchprintSon) < 0.001)
+	    pitchprintSon = 0;
+	  if(abs(yawprintSon) < 0.001)
+	    yawprintSon = 0;
 
-	  if(abs(xinitprint) < 0.001)
-	    xinitprint = 0;
-	  if(abs(yinitprint) < 0.001)
-	    yinitprint = 0;
-	  if(abs(zinitprint) < 0.001)
-	    zinitprint = 0;
-	  if(abs(rollinitprint) < 0.001)
-	    rollinitprint = 0;
-	  if(abs(pitchinitprint) < 0.001)
-	    pitchinitprint = 0;
-	  if(abs(yawinitprint) < 0.001)
-	    yawinitprint = 0;
+	  if(abs(xinitprintSon) < 0.001)
+	    xinitprintSon = 0;
+	  if(abs(yinitprintSon) < 0.001)
+	    yinitprintSon = 0;
+	  if(abs(zinitprintSon) < 0.001)
+	    zinitprintSon = 0;
+	  if(abs(rollinitprintSon) < 0.001)
+	    rollinitprintSon = 0;
+	  if(abs(pitchinitprintSon) < 0.001)
+	    pitchinitprintSon = 0;
+	  if(abs(yawinitprintSon) < 0.001)
+	    yawinitprintSon = 0;
 
-	  if((yawprint - prev_son_yaw) > 3*PI/4)
-	    yawprint -= 2*PI;
-	  else if((yawprint - prev_son_yaw) < -3*PI/4)
-	    yawprint += 2*PI;
+	  if((yawprintSon - prev_son_yaw) > 3*PI/4)
+	    yawprintSon -= 2*PI;
+	  else if((yawprintSon - prev_son_yaw) < -3*PI/4)
+	    yawprintSon += 2*PI;
 
-	  prev_son_yaw = yawprint;	  
+	  prev_son_yaw = yawprintSon;	  
 
-	  cout << t2son_arr[iSon] << " Sonar Only Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint << endl;
+	  cout << t2son_arr[iSon] << " Sonar Only Result: x,y,yaw = " << xprintSon << "," << yprintSon << "," << yawprintSon << endl;
 	  
-	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint*180/PI << ";" << pitchprint*180/PI << ";" << yawprint*180/PI << ";";
-	  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint*180/PI << ";" << pitchinitprint*180/PI << ";" << yawinitprint*180/PI << ";";
+	  outfile << xprintSon << ";" << yprintSon << ";" << zprintSon << ";" << rollprintSon*180/PI << ";" << pitchprintSon*180/PI << ";" << yawprintSon*180/PI << ";";
+	  outfile << xinitprintSon << ";" << yinitprintSon << ";" << zinitprintSon << ";" << rollinitprintSon*180/PI << ";" << pitchinitprintSon*180/PI << ";" << yawinitprintSon*180/PI << ";";
 
-	  outfilexls << xprint << "\t" << yprint << "\t" << zprint << "\t" << rollprint*180/PI << "\t" << pitchprint*180/PI << "\t" << yawprint*180/PI << "\t";
-	  outfilexls << xinitprint << "\t" << yinitprint << "\t" << zinitprint << "\t" << rollinitprint*180/PI << "\t" << pitchinitprint*180/PI << "\t" << yawinitprint*180/PI << "\t";
+	  outfilexls << xprintSon << "\t" << yprintSon << "\t" << zprintSon << "\t" << rollprintSon*180/PI << "\t" << pitchprintSon*180/PI << "\t" << yawprintSon*180/PI << "\t";
+	  outfilexls << xinitprintSon << "\t" << yinitprintSon << "\t" << zinitprintSon << "\t" << rollinitprintSon*180/PI << "\t" << pitchinitprintSon*180/PI << "\t" << yawinitprintSon*180/PI << "\t";
 	  
 	}
       else
 	{
-	  outfile << ";;;;;;;;;;;;";
-	  outfilexls << "\t\t\t\t\t\t\t\t\t\t\t\t";
+	  //outfile << ";;;;;;;;;;;;";
+	  //outfilexls << "\t\t\t\t\t\t\t\t\t\t\t\t";
+	  outfile << xprintSon << ";" << yprintSon << ";" << zprintSon << ";" << rollprintSon*180/PI << ";" << pitchprintSon*180/PI << ";" << yawprintSon*180/PI << ";";
+	  outfile << xinitprintSon << ";" << yinitprintSon << ";" << zinitprintSon << ";" << rollinitprintSon*180/PI << ";" << pitchinitprintSon*180/PI << ";" << yawinitprintSon*180/PI << ";";
+
+	  outfilexls << xprintSon << "\t" << yprintSon << "\t" << zprintSon << "\t" << rollprintSon*180/PI << "\t" << pitchprintSon*180/PI << "\t" << yawprintSon*180/PI << "\t";
+	  outfilexls << xinitprintSon << "\t" << yinitprintSon << "\t" << zinitprintSon << "\t" << rollinitprintSon*180/PI << "\t" << pitchinitprintSon*180/PI << "\t" << yawinitprintSon*180/PI << "\t";
 	}
       //-------------CamOnly----------------//
       if(t2cam_arr[iCam]==nodeNum)
 	{
-	  xprint = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).x();
-	  yprint = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).y();
-	  zprint = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).z();
-	  rollprint = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).rotation().roll();
-	  pitchprint = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).rotation().pitch();
-	  yawprint = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).rotation().yaw();
+	  xprintCam = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).x();
+	  yprintCam = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).y();
+	  zprintCam = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).z();
+	  rollprintCam = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).rotation().roll();
+	  pitchprintCam = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).rotation().pitch();
+	  yawprintCam = resultCamOnly.at<Pose3>(t2cam_arr[iCam]).rotation().yaw();
 
 	  //Initial Guess: 
-	  double xinitprint = initialCam.at<Pose3>(t2cam_arr[iCam]).x();
-	  double yinitprint = initialCam.at<Pose3>(t2cam_arr[iCam]).y();
-	  double zinitprint = initialCam.at<Pose3>(t2cam_arr[iCam]).z();
-	  double rollinitprint = initialCam.at<Pose3>(t2cam_arr[iCam]).rotation().roll();
-	  double pitchinitprint = initialCam.at<Pose3>(t2cam_arr[iCam]).rotation().pitch();
-	  double yawinitprint = initialCam.at<Pose3>(t2cam_arr[iCam]).rotation().yaw();
+	  xinitprintCam = initialCam.at<Pose3>(t2cam_arr[iCam]).x();
+	  yinitprintCam = initialCam.at<Pose3>(t2cam_arr[iCam]).y();
+	  zinitprintCam = initialCam.at<Pose3>(t2cam_arr[iCam]).z();
+	  rollinitprintCam = initialCam.at<Pose3>(t2cam_arr[iCam]).rotation().roll();
+	  pitchinitprintCam = initialCam.at<Pose3>(t2cam_arr[iCam]).rotation().pitch();
+	  yawinitprintCam = initialCam.at<Pose3>(t2cam_arr[iCam]).rotation().yaw();
 	  
-	  if(abs(xprint) < 0.001)
-	    xprint = 0;
-	  if(abs(yprint) < 0.001)
-	    yprint = 0;
-	  if(abs(zprint) < 0.001)
-	    zprint = 0;
-	  if(abs(rollprint) < 0.001)
-	    rollprint = 0;
-	  if(abs(pitchprint) < 0.001)
-	    pitchprint = 0;
-	  if(abs(yawprint) < 0.001)
-	    yawprint = 0;
+	  if(abs(xprintCam) < 0.001)
+	    xprintCam = 0;
+	  if(abs(yprintCam) < 0.001)
+	    yprintCam = 0;
+	  if(abs(zprintCam) < 0.001)
+	    zprintCam = 0;
+	  if(abs(rollprintCam) < 0.001)
+	    rollprintCam = 0;
+	  if(abs(pitchprintCam) < 0.001)
+	    pitchprintCam = 0;
+	  if(abs(yawprintCam) < 0.001)
+	    yawprintCam = 0;
 	  
-	  if(abs(xinitprint) < 0.001)
-	    xinitprint = 0;
-	  if(abs(yinitprint) < 0.001)
-	    yinitprint = 0;
-	  if(abs(zinitprint) < 0.001)
-	    zinitprint = 0;
-	  if(abs(rollinitprint) < 0.001)
-	    rollinitprint = 0;
-	  if(abs(pitchinitprint) < 0.001)
-	    pitchinitprint = 0;
-	  if(abs(yawinitprint) < 0.001)
-	    yawinitprint = 0;
+	  if(abs(xinitprintCam) < 0.001)
+	    xinitprintCam = 0;
+	  if(abs(yinitprintCam) < 0.001)
+	    yinitprintCam = 0;
+	  if(abs(zinitprintCam) < 0.001)
+	    zinitprintCam = 0;
+	  if(abs(rollinitprintCam) < 0.001)
+	    rollinitprintCam = 0;
+	  if(abs(pitchinitprintCam) < 0.001)
+	    pitchinitprintCam = 0;
+	  if(abs(yawinitprintCam) < 0.001)
+	    yawinitprintCam = 0;
 
-	  if((yawprint - prev_cam_yaw) > 3*PI/4)
-	    yawprint -= 2*PI;
-	  else if((yawprint - prev_cam_yaw) < -3*PI/4)
-	    yawprint += 2*PI;
+	  if((yawprintCam - prev_cam_yaw) > 3*PI/4)
+	    yawprintCam -= 2*PI;
+	  else if((yawprintCam - prev_cam_yaw) < -3*PI/4)
+	    yawprintCam += 2*PI;
 
-	  prev_cam_yaw = yawprint;
+	  prev_cam_yaw = yawprintCam;
 
-	  cout << t2cam_arr[iCam] << " Cam Only Result: x,y,yaw = " << xprint << "," << yprint << "," << yawprint*180/PI << endl;
-	  cout << t2cam_arr[iCam] << " Cam Only Initial: x,y,yaw = " << xinitprint << "," << yinitprint << "," << yawinitprint*180/PI << endl;
+	  cout << t2cam_arr[iCam] << " Cam Only Result: x,y,yaw = " << xprintCam << "," << yprintCam << "," << yawprintCam*180/PI << endl;
+	  cout << t2cam_arr[iCam] << " Cam Only Initial: x,y,yaw = " << xinitprintCam << "," << yinitprintCam << "," << yawinitprintCam*180/PI << endl;
 	  
-	  outfile << xprint << ";" << yprint << ";" << zprint << ";" << rollprint*180/PI << ";" << pitchprint*180/PI << ";" << yawprint*180/PI << ";";
-	  outfile << xinitprint << ";" << yinitprint << ";" << zinitprint << ";" << rollinitprint*180/PI << ";" << pitchinitprint*180/PI << ";" << yawinitprint*180/PI << ";";
-	  outfilexls << xprint << "\t" << yprint << "\t" << zprint << "\t" << rollprint*180/PI << "\t" << pitchprint*180/PI << "\t" << yawprint*180/PI << "\t";
-	  outfilexls << xinitprint << "\t" << yinitprint << "\t" << zinitprint << "\t" << rollinitprint*180/PI << "\t" << pitchinitprint*180/PI << "\t" << yawinitprint*180/PI << "\t";
+	  outfile << xprintCam << ";" << yprintCam << ";" << zprintCam << ";" << rollprintCam*180/PI << ";" << pitchprintCam*180/PI << ";" << yawprintCam*180/PI << ";";
+	  outfile << xinitprintCam << ";" << yinitprintCam << ";" << zinitprintCam << ";" << rollinitprintCam*180/PI << ";" << pitchinitprintCam*180/PI << ";" << yawinitprintCam*180/PI << ";";
+	  outfilexls << xprintCam << "\t" << yprintCam << "\t" << zprintCam << "\t" << rollprintCam*180/PI << "\t" << pitchprintCam*180/PI << "\t" << yawprintCam*180/PI << "\t";
+	  outfilexls << xinitprintCam << "\t" << yinitprintCam << "\t" << zinitprintCam << "\t" << rollinitprintCam*180/PI << "\t" << pitchinitprintCam*180/PI << "\t" << yawinitprintCam*180/PI << "\t";
 
 	}
 
       else
 	{
-	  outfile << ";;;;;;;;;;;;";
-	  outfilexls << "\t\t\t\t\t\t\t\t\t\t\t\t";
+	  //outfile << ";;;;;;;;;;;;";
+	  //outfilexls << "\t\t\t\t\t\t\t\t\t\t\t\t";
+	  outfile << xprintCam << ";" << yprintCam << ";" << zprintCam << ";" << rollprintCam*180/PI << ";" << pitchprintCam*180/PI << ";" << yawprintCam*180/PI << ";";
+	  outfile << xinitprintCam << ";" << yinitprintCam << ";" << zinitprintCam << ";" << rollinitprintCam*180/PI << ";" << pitchinitprintCam*180/PI << ";" << yawinitprintCam*180/PI << ";";
+	  outfilexls << xprintCam << "\t" << yprintCam << "\t" << zprintCam << "\t" << rollprintCam*180/PI << "\t" << pitchprintCam*180/PI << "\t" << yawprintCam*180/PI << "\t";
+	  outfilexls << xinitprintCam << "\t" << yinitprintCam << "\t" << zinitprintCam << "\t" << rollinitprintCam*180/PI << "\t" << pitchinitprintCam*180/PI << "\t" << yawinitprintCam*180/PI << "\t";
 	}
       //------------------------------------------------------------------------
       // Calculate and print marginal covariances for all variables
@@ -1861,55 +1922,69 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
       if(t2cam_arr[iCam]==nodeNum)
 	{
 	  cout << "X" << nodeNum << " covariance: ";
-	  for(int i1=0;i1<6;i1++)
-	    {
-	      cout << marginals.marginalCovariance(nodeNum)(i1,i1) << ",";
-	      outfile << marginals.marginalCovariance(nodeNum)(i1,i1) << ";";
-	      outfilexls << marginals.marginalCovariance(nodeNum)(i1,i1) << "\t";
-	    }
-	  cout << endl;
+	  xprintFuseNoise = marginals.marginalCovariance(nodeNum)(0,0);
+	  yprintFuseNoise = marginals.marginalCovariance(nodeNum)(1,1);
+	  zprintFuseNoise = marginals.marginalCovariance(nodeNum)(2,2);
+	  rollprintFuseNoise = marginals.marginalCovariance(nodeNum)(3,3);
+	  pitchprintFuseNoise = marginals.marginalCovariance(nodeNum)(4,4);
+	  yawprintFuseNoise = marginals.marginalCovariance(nodeNum)(5,5);
+
+	  cout << xprintFuseNoise << "," << yprintFuseNoise << "," << zprintFuseNoise << "," << rollprintFuseNoise << "," << pitchprintFuseNoise << "," << yawprintFuseNoise << ",";
+	  outfile << xprintFuseNoise << ";" << yprintFuseNoise << ";" << zprintFuseNoise << ";" << rollprintFuseNoise << ";" << pitchprintFuseNoise << ";" << yawprintFuseNoise << ";";
+	  outfilexls << xprintFuseNoise << "\t" << yprintFuseNoise << "\t" << zprintFuseNoise << "\t" << rollprintFuseNoise << "\t" << pitchprintFuseNoise << "\t" << yawprintFuseNoise << "\t";
 	}
       else
 	{
-	  outfile << ";;;;;;";
-	  outfilexls << "\t\t\t\t\t\t";
+	  //outfile << ";;;;;;";
+	  //outfilexls << "\t\t\t\t\t\t";
+	  outfile << xprintFuseNoise << ";" << yprintFuseNoise << ";" << zprintFuseNoise << ";" << rollprintFuseNoise << ";" << pitchprintFuseNoise << ";" << yawprintFuseNoise << ";";
+	  outfilexls << xprintFuseNoise << "\t" << yprintFuseNoise << "\t" << zprintFuseNoise << "\t" << rollprintFuseNoise << "\t" << pitchprintFuseNoise << "\t" << yawprintFuseNoise << "\t";
 	}
       //------------SonOnly--------------//
       //      if(t2son_arr[iSon]==nodeNum)
       if((!doneSon)&&(t2son_arr[iSon]==nodeNum))
 	{
 	  cout << "X" << nodeNum << " Son covariance: ";
-	  for(int i1=0;i1<6;i1++)
-	    {
-	      //Note: If problem here, probably yaw covariance too big
-	      cout << marginalsSonOnly.marginalCovariance(t2son_arr[iSon])(i1,i1) << ",";
-	      outfile << marginalsSonOnly.marginalCovariance(t2son_arr[iSon])(i1,i1) << ";";
-	      outfilexls << marginalsSonOnly.marginalCovariance(t2son_arr[iSon])(i1,i1) << "\t";
-	    }
-	  cout << endl;
+	  xprintSonNoise = marginals.marginalCovariance(nodeNum)(0,0);
+	  yprintSonNoise = marginals.marginalCovariance(nodeNum)(1,1);
+	  zprintSonNoise = marginals.marginalCovariance(nodeNum)(2,2);
+	  rollprintSonNoise = marginals.marginalCovariance(nodeNum)(3,3);
+	  pitchprintSonNoise = marginals.marginalCovariance(nodeNum)(4,4);
+	  yawprintSonNoise = marginals.marginalCovariance(nodeNum)(5,5);
+
+	  cout << xprintSonNoise << "," << yprintSonNoise << "," << zprintSonNoise << "," << rollprintSonNoise << "," << pitchprintSonNoise << "," << yawprintSonNoise << ",";
+	  outfile << xprintSonNoise << ";" << yprintSonNoise << ";" << zprintSonNoise << ";" << rollprintSonNoise << ";" << pitchprintSonNoise << ";" << yawprintSonNoise << ";";
+	  outfilexls << xprintSonNoise << "\t" << yprintSonNoise << "\t" << zprintSonNoise << "\t" << rollprintSonNoise << "\t" << pitchprintSonNoise << "\t" << yawprintSonNoise << "\t";
 	}
       else
 	{
-	outfile << ";;;;;;";
-	outfilexls << "\t\t\t\t\t\t";
+	  //outfile << ";;;;;;";
+	  //outfilexls << "\t\t\t\t\t\t";
+	  outfile << xprintSonNoise << ";" << yprintSonNoise << ";" << zprintSonNoise << ";" << rollprintSonNoise << ";" << pitchprintSonNoise << ";" << yawprintSonNoise << ";";
+	  outfilexls << xprintSonNoise << "\t" << yprintSonNoise << "\t" << zprintSonNoise << "\t" << rollprintSonNoise << "\t" << pitchprintSonNoise << "\t" << yawprintSonNoise << "\t";
 	}
       //------------VidOnly------------//
       //      if(t2cam_arr[iCam]==nodeNum)
       if((!doneCam)&&(t2cam_arr[iCam]==nodeNum))
 	{	  
 	  cout << "X" << nodeNum << " Cam covariance: ";
-	  for(int i1=0;i1<6;i1++)
-	    {
-	      cout << marginalsCamOnly.marginalCovariance(t2cam_arr[iCam])(i1,i1) << ",";
-	      outfile << marginalsCamOnly.marginalCovariance(t2cam_arr[iCam])(i1,i1) << ";";
-	      outfilexls << marginalsCamOnly.marginalCovariance(t2cam_arr[iCam])(i1,i1) << "\t";
-	    }
-	  cout << endl;
+	  xprintCamNoise = marginals.marginalCovariance(nodeNum)(0,0);
+	  yprintCamNoise = marginals.marginalCovariance(nodeNum)(1,1);
+	  zprintCamNoise = marginals.marginalCovariance(nodeNum)(2,2);
+	  rollprintCamNoise = marginals.marginalCovariance(nodeNum)(3,3);
+	  pitchprintCamNoise = marginals.marginalCovariance(nodeNum)(4,4);
+	  yawprintCamNoise = marginals.marginalCovariance(nodeNum)(5,5);
+
+	  cout << xprintCamNoise << "," << yprintCamNoise << "," << zprintCamNoise << "," << rollprintCamNoise << "," << pitchprintCamNoise << "," << yawprintCamNoise << ",";
+	  outfile << xprintCamNoise << ";" << yprintCamNoise << ";" << zprintCamNoise << ";" << rollprintCamNoise << ";" << pitchprintCamNoise << ";" << yawprintCamNoise << ";";
+	  outfilexls << xprintCamNoise << "\t" << yprintCamNoise << "\t" << zprintCamNoise << "\t" << rollprintCamNoise << "\t" << pitchprintCamNoise << "\t" << yawprintCamNoise << "\t";
 	}
       else
 	{
-	  outfile << ";;;;;;";
-	  outfilexls << "\t\t\t\t\t\t";
+	  //outfile << ";;;;;;";
+	  //outfilexls << "\t\t\t\t\t\t";
+	  outfile << xprintCamNoise << ";" << yprintCamNoise << ";" << zprintCamNoise << ";" << rollprintCamNoise << ";" << pitchprintCamNoise << ";" << yawprintCamNoise << ";";
+	  outfilexls << xprintCamNoise << "\t" << yprintCamNoise << "\t" << zprintCamNoise << "\t" << rollprintCamNoise << "\t" << pitchprintCamNoise << "\t" << yawprintCamNoise << "\t";
 	}
 
       //-------------TRUTH output -------------------//
