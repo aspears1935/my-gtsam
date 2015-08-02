@@ -1945,12 +1945,12 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
       if((!doneSon)&&(t2son_arr[iSon]==nodeNum))
 	{
 	  cout << "X" << nodeNum << " Son covariance: ";
-	  xprintSonNoise = marginals.marginalCovariance(nodeNum)(0,0);
-	  yprintSonNoise = marginals.marginalCovariance(nodeNum)(1,1);
-	  zprintSonNoise = marginals.marginalCovariance(nodeNum)(2,2);
-	  rollprintSonNoise = marginals.marginalCovariance(nodeNum)(3,3);
-	  pitchprintSonNoise = marginals.marginalCovariance(nodeNum)(4,4);
-	  yawprintSonNoise = marginals.marginalCovariance(nodeNum)(5,5);
+	  xprintSonNoise = marginalsSonOnly.marginalCovariance(nodeNum)(0,0);
+	  yprintSonNoise = marginalsSonOnly.marginalCovariance(nodeNum)(1,1);
+	  zprintSonNoise = marginalsSonOnly.marginalCovariance(nodeNum)(2,2);
+	  rollprintSonNoise = marginalsSonOnly.marginalCovariance(nodeNum)(3,3);
+	  pitchprintSonNoise = marginalsSonOnly.marginalCovariance(nodeNum)(4,4);
+	  yawprintSonNoise = marginalsSonOnly.marginalCovariance(nodeNum)(5,5);
 
 	  cout << xprintSonNoise << "," << yprintSonNoise << "," << zprintSonNoise << "," << rollprintSonNoise << "," << pitchprintSonNoise << "," << yawprintSonNoise << ",";
 	  outfile << xprintSonNoise << ";" << yprintSonNoise << ";" << zprintSonNoise << ";" << rollprintSonNoise << ";" << pitchprintSonNoise << ";" << yawprintSonNoise << ";";
@@ -1968,12 +1968,12 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
       if((!doneCam)&&(t2cam_arr[iCam]==nodeNum))
 	{	  
 	  cout << "X" << nodeNum << " Cam covariance: ";
-	  xprintCamNoise = marginals.marginalCovariance(nodeNum)(0,0);
-	  yprintCamNoise = marginals.marginalCovariance(nodeNum)(1,1);
-	  zprintCamNoise = marginals.marginalCovariance(nodeNum)(2,2);
-	  rollprintCamNoise = marginals.marginalCovariance(nodeNum)(3,3);
-	  pitchprintCamNoise = marginals.marginalCovariance(nodeNum)(4,4);
-	  yawprintCamNoise = marginals.marginalCovariance(nodeNum)(5,5);
+	  xprintCamNoise = marginalsCamOnly.marginalCovariance(nodeNum)(0,0);
+	  yprintCamNoise = marginalsCamOnly.marginalCovariance(nodeNum)(1,1);
+	  zprintCamNoise = marginalsCamOnly.marginalCovariance(nodeNum)(2,2);
+	  rollprintCamNoise = marginalsCamOnly.marginalCovariance(nodeNum)(3,3);
+	  pitchprintCamNoise = marginalsCamOnly.marginalCovariance(nodeNum)(4,4);
+	  yawprintCamNoise = marginalsCamOnly.marginalCovariance(nodeNum)(5,5);
 
 	  cout << xprintCamNoise << "," << yprintCamNoise << "," << zprintCamNoise << "," << rollprintCamNoise << "," << pitchprintCamNoise << "," << yawprintCamNoise << ",";
 	  outfile << xprintCamNoise << ";" << yprintCamNoise << ";" << zprintCamNoise << ";" << rollprintCamNoise << ";" << pitchprintCamNoise << ";" << yawprintCamNoise << ";";
