@@ -129,15 +129,15 @@ int main(int argc, char** argv)
   if(argc > 4) 
     xinit = atof(argv[4]);
   if(argc > 5) 
-    xinit = atof(argv[5]);
+    yinit = atof(argv[5]);
   if(argc > 6) 
-    xinit = atof(argv[6]);
+    zinit = atof(argv[6]);
   if(argc > 7) 
-    xinit = atof(argv[7]);
+    rollinit = atof(argv[7])*PI/180;
   if(argc > 8) 
-    xinit = atof(argv[8]);
+    pitchinit = atof(argv[8])*PI/180;
   if(argc > 9) 
-    xinit = atof(argv[9]);
+    yawinit = atof(argv[9])*PI/180;
 
   cout << "Initial Global Values (x,y,z,roll,pitch,yaw) = " << xinit << "," << yinit << "," << zinit << "," << rollinit << "," << pitchinit << "," << yawinit << endl;
 
