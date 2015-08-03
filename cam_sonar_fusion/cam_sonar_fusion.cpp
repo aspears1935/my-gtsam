@@ -106,9 +106,16 @@ int main(int argc, char** argv)
   //  cout << fixed;
   //cout << defaultfloat;
 
+  double xinit = 0;
+  double yinit = 0;
+  double zinit = 0;
+  double rollinit = 0;
+  double pitchinit = 0;
+  double yawinit = 0;
+
   if(argc < 3)
     {
-      cout << "Not Enough Args. Usage: ./gtsam <sonar input CSV file with x,y,theta> <camera input CSV file with x,y,z,roll,pitch,yaw> <OPTIONAL truth CSV file with x,y,yaw>" << endl << "Example: ./gtsam soninput.csv caminput.csv truth.csv" << endl;
+      cout << "Not Enough Args. Usage: ./gtsam <sonar input CSV file with x,y,theta> <camera input CSV file with x,y,z,roll,pitch,yaw> <OPTIONAL truth CSV file with x,y,yaw> <OPTIONAL xinit> <OPTIONAL yinit> <OPTIONAL zinit> <OPTIONAL rollinit> <OPTIONAL pitchinit> <OPTIONAL yawinit>" << endl << "Example: ./gtsam soninput.csv caminput.csv truth.csv 0 0 0 0 0 90" << endl;
       return 0;
     }
   else
@@ -118,6 +125,21 @@ int main(int argc, char** argv)
       if(argc > 3)
 	strcpy(truthInputFileName, argv[3]);  
     }
+  //initial values:
+  if(argc > 4) 
+    xinit = atof(argv[4]);
+  if(argc > 5) 
+    xinit = atof(argv[5]);
+  if(argc > 6) 
+    xinit = atof(argv[6]);
+  if(argc > 7) 
+    xinit = atof(argv[7]);
+  if(argc > 8) 
+    xinit = atof(argv[8]);
+  if(argc > 9) 
+    xinit = atof(argv[9]);
+
+  cout << "Initial Global Values (x,y,z,roll,pitch,yaw) = " << xinit << "," << yinit << "," << zinit << "," << rollinit << "," << pitchinit << "," << yawinit << endl;
 
   ifstream inFileSon(sonInputFileName);
   ifstream inFileCam(camInputFileName);
@@ -701,7 +723,7 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   */
 
   //  Pose3 priorMean(priorMeanRot3,priorMeanPoint3);
-  Pose3 priorMean(Rot3::ypr(0,0,0), Point3(0,0,0));
+  Pose3 priorMean(Rot3::ypr(yawinit,pitchinit,rollinit), Point3(xinit,yinit,zinit));
   cout << "priorMean=" << endl;
   priorMean.print();
 
@@ -724,11 +746,11 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   //NOTE: addedErr - This is confusing. When both before and after prior addedErr is 7 or less, it has no effect - all the same. When 8 before and after, it begins to change the output. When it is 10, it changes a lot. When 150, doesn't change at all and back to no effect like 0. This is for the simulated data input rectangle200x100 and the sonar only data (the fused data performs differently). Documentation says that if there is only one solution, it should be found no matter what initial guess - but needs to be close to soln if multiple solutions.
   double addedErr = 0; //Debug: should be 0
    
-  initial.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
-  initialSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
-  initialSonRobust.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
-  initialCam.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
-  initialCamRobust.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
+  initial.insert(0, Pose3(Rot3::ypr(yawinit+addedErr,pitchinit+addedErr,rollinit+addedErr), Point3(xinit+addedErr,yinit+addedErr,zinit+addedErr)));
+  initialSon.insert(0, Pose3(Rot3::ypr(yawinit+addedErr,pitchinit+addedErr,rollinit+addedErr), Point3(xinit+addedErr,yinit+addedErr,zinit+addedErr)));
+  initialSonRobust.insert(0, Pose3(Rot3::ypr(yawinit+addedErr,pitchinit+addedErr,rollinit+addedErr), Point3(xinit+addedErr,yinit+addedErr,zinit+addedErr)));
+  initialCam.insert(0, Pose3(Rot3::ypr(yawinit+addedErr,pitchinit+addedErr,rollinit+addedErr), Point3(xinit+addedErr,yinit+addedErr,zinit+addedErr)));
+  initialCamRobust.insert(0, Pose3(Rot3::ypr(yawinit+addedErr,pitchinit+addedErr,rollinit+addedErr), Point3(xinit+addedErr,yinit+addedErr,zinit+addedErr)));
   //initialCamSon.insert(0, Pose3(Rot3::ypr(addedErr,addedErr,addedErr), Point3(addedErr,addedErr,addedErr)));
 
   //Note: changed just this and didn't effect output of sonar results 0-10
@@ -755,9 +777,9 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   int i;
 
   //Sonar Inits:
-  double x_sum_sonRobust = 0;
-  double y_sum_sonRobust = 0;
-  double yaw_sum_sonRobust = 0;
+  double x_sum_sonRobust = xinit;
+  double y_sum_sonRobust = yinit;
+  double yaw_sum_sonRobust = yawinit;
   double x_sonRobust = x_son_arr[0];
   double y_sonRobust = y_son_arr[0];
   double yaw_sonRobust = yaw_son_arr[0];
@@ -770,9 +792,9 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   double sonNoiseRotRobust = 0.00001;
   double sonNoiseTransl = 0.0001;
   double sonNoiseRot = 0.00001;
-  double x_sum_son = 0;
-  double y_sum_son = 0;
-  double yaw_sum_son = 0;
+  double x_sum_son = xinit;
+  double y_sum_son = yinit;
+  double yaw_sum_son = yawinit;
   //  double prev_x_son = x_son_arr[0];
   //  double prev_y_son = y_son_arr[0];
   //  double prev_yaw_son = yaw_son_arr[0];
@@ -784,21 +806,21 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   //  double prev_sonNoiseRot = 0.00001;
 
   //Camera Inits:
-  double x_sum_cam=0;
-  double y_sum_cam=0;
-  double z_sum_cam=0;
-  double roll_sum_cam=0;
-  double pitch_sum_cam=0;
-  double yaw_sum_cam=0;
-  double x_sum_camSon = 0;
-  double y_sum_camSon = 0;
-  double z_sum_camSon = 0;
-  double x_sum_camRobust=0;
-  double y_sum_camRobust=0;
-  double z_sum_camRobust=0;
-  double roll_sum_camRobust=0;
-  double pitch_sum_camRobust=0;
-  double yaw_sum_camRobust=0;  
+  double x_sum_cam=xinit;
+  double y_sum_cam=yinit;
+  double z_sum_cam=zinit;
+  double roll_sum_cam=rollinit;
+  double pitch_sum_cam=pitchinit;
+  double yaw_sum_cam=yawinit;
+  double x_sum_camSon = xinit;
+  double y_sum_camSon = yinit;
+  double z_sum_camSon = zinit;
+  double x_sum_camRobust=xinit;
+  double y_sum_camRobust=yinit;
+  double z_sum_camRobust=zinit;
+  double roll_sum_camRobust=rollinit;
+  double pitch_sum_camRobust=pitchinit;
+  double yaw_sum_camRobust=yawinit;  
   double timeDiffSon = 0;
   double camNoiseTransl = 0.0001;
   double camNoiseRot = 0.00001;
