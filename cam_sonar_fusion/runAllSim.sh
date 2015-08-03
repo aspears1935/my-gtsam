@@ -79,11 +79,11 @@ cp outputGTSAM.xls outputsSim/outputGTSAM_downVoronoiIceCircle.xls
 
 ##############################
 
-./CamSonarFusion ../../opencv-as/shiftEstSonarOnly/outputsSim/outputSonarGTSAM_simScurve_1x.csv ../../opencv-as/shiftEstVideoOnly/outputsSim/outputCameraFrontSCurveGTSAM.csv ../../Data/Simulated2014/simulatedSCurve.csv >> outputsSim/consoleout_frontSCurve.txt
+./CamSonarFusion ../../opencv-as/shiftEstSonarOnly/outputsSim/outputSonarGTSAM_simScurve_1x.csv ../../opencv-as/shiftEstVideoOnly/outputsSim/outputCameraFrontSCurveGTSAM.csv ../../Data/Simulated2014/simulatedSCurve.csv 0 0 0 0 0 90 >> outputsSim/consoleout_frontSCurve.txt
 cp outputGTSAM.csv outputsSim/outputGTSAM_frontSCurve.csv
 cp outputGTSAM.xls outputsSim/outputGTSAM_frontSCurve.xls
 
-./CamSonarFusion ../../opencv-as/shiftEstSonarOnly/outputsSim/outputSonarGTSAM_simScurve_1x.csv ../../opencv-as/shiftEstVideoOnly/outputsSim/outputCameraUpSCurveGTSAM.csv ../../Data/Simulated2014/simulatedSCurve.csv >> outputsSim/consoleout_upSCurve.txt
+./CamSonarFusion ../../opencv-as/shiftEstSonarOnly/outputsSim/outputSonarGTSAM_simScurve_1x.csv ../../opencv-as/shiftEstVideoOnly/outputsSim/outputCameraUpSCurveGTSAM.csv ../../Data/Simulated2014/simulatedSCurve.csv 0 0 0 0 0 90 >> outputsSim/consoleout_upSCurve.txt
 cp outputGTSAM.csv outputsSim/outputGTSAM_upSCurve.csv
 cp outputGTSAM.xls outputsSim/outputGTSAM_upSCurve.xls
 
