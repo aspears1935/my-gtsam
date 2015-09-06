@@ -1,3 +1,5 @@
+//NOTE!!!! Changed marginals on Camera to Fused so that it would converge!!!!!!!!!!
+
 //TODO: 
 //investigate the noise models. For now, camonly is set to ZERO_NOISE because it was causing it to not solve. Should test with simple inputs.
 //need to change size of x,y,z, arrays to actual size of frames from 256.
@@ -1426,11 +1428,12 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 
   //resultSonOnly.print();
 
+  //  Marginals marginals(graph, result);
   Marginals marginals(graph, result);
   cout << "Calculated Fusion Marginals" << endl;
   Marginals marginalsSonOnly(graphSonOnly, resultSonOnly);
   cout << "Calculated Sonar Marginals" << endl;
-  Marginals marginalsCamOnly(graphCamOnly, resultCamOnly);
+  Marginals marginalsCamOnly(graph, result);//(graphCamOnly, resultCamOnly);
   cout << "Calculated Camera Marginals" << endl;
 
   double xprint;
@@ -1622,6 +1625,9 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
   double prev_cam_yaw = 0;
   double prev_son_yaw = 0;
   double prev_fuse_yaw = 0;
+  double prev_init_cam_yaw = 0;
+  double prev_init_son_yaw = 0;
+  double prev_init_fuse_yaw = 0;
 
   double xprintFuse;
   double yprintFuse;
@@ -1752,6 +1758,13 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
  
 	  prev_fuse_yaw = yawprintFuse;	  
 
+	  if((yawinitprintFuse - prev_init_fuse_yaw) > 3*PI/4)
+	    yawinitprintFuse -= 2*PI;
+	  else if((yawinitprintFuse - prev_init_fuse_yaw) < -3*PI/4)
+	    yawinitprintFuse += 2*PI;
+ 
+	  prev_init_fuse_yaw = yawinitprintFuse;	  
+
 	  cout << nodeNum << " Result: x,y,yaw = " << xprintFuse << "," << yprintFuse << "," << yawprintFuse << endl;
 	  
 	  if(PRINT_UNIX_TIMES)
@@ -1846,6 +1859,13 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 
 	  prev_son_yaw = yawprintSon;	  
 
+	  if((yawinitprintSon - prev_init_son_yaw) > 3*PI/4)
+	    yawinitprintSon -= 2*PI;
+	  else if((yawinitprintSon - prev_init_son_yaw) < -3*PI/4)
+	    yawinitprintSon += 2*PI;
+
+	  prev_init_son_yaw = yawinitprintSon;	  
+
 	  cout << t2son_arr[iSon] << " Sonar Only Result: x,y,yaw = " << xprintSon << "," << yprintSon << "," << yawprintSon << endl;
 	  
 	  outfile << xprintSon << ";" << yprintSon << ";" << zprintSon << ";" << rollprintSon*180/PI << ";" << pitchprintSon*180/PI << ";" << yawprintSon*180/PI << ";";
@@ -1915,6 +1935,15 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 	    yawprintCam += 2*PI;
 
 	  prev_cam_yaw = yawprintCam;
+
+	  //Now check for wraparound with initial values:
+	  //cout << t2cam_arr[iCam] << ":" << prev_init_cam_yaw << "," << yawinitprintCam << "," <<  endl;
+	  if((yawinitprintCam - prev_init_cam_yaw) > 3*PI/4)
+	    yawinitprintCam -= 2*PI;
+	  else if((yawinitprintCam - prev_init_cam_yaw) < -3*PI/4)
+	    yawinitprintCam += 2*PI;
+
+	  prev_init_cam_yaw = yawinitprintCam;
 
 	  cout << t2cam_arr[iCam] << " Cam Only Result: x,y,yaw = " << xprintCam << "," << yprintCam << "," << yawprintCam*180/PI << endl;
 	  cout << t2cam_arr[iCam] << " Cam Only Initial: x,y,yaw = " << xinitprintCam << "," << yinitprintCam << "," << yawinitprintCam*180/PI << endl;
