@@ -95,6 +95,10 @@ using namespace gtsam;
 #define ZERO_ZROLLPITCH true
 #define AVERAGE_INITIAL_VALUES true
 
+#define SIM_DATA 0
+#define COLORADO_DATA 1
+#define ANTARCTICA_DATA 2
+
 int main(int argc, char** argv) 
 {
   char sonInputFileName[256];
@@ -102,6 +106,8 @@ int main(int argc, char** argv)
   char truthInputFileName[256];
 
   int firstSonNode, firstCamNode, firstTruthNode, lastSonNode, lastCamNode, lastTruthNode;
+
+  int datasetType = 0;
 
   double SONAR_TIME0;
   
@@ -117,7 +123,7 @@ int main(int argc, char** argv)
 
   if(argc < 3)
     {
-      cout << "Not Enough Args. Usage: ./gtsam <sonar input CSV file with x,y,theta> <camera input CSV file with x,y,z,roll,pitch,yaw> <OPTIONAL truth CSV file with x,y,yaw> <OPTIONAL xinit> <OPTIONAL yinit> <OPTIONAL zinit> <OPTIONAL rollinit> <OPTIONAL pitchinit> <OPTIONAL yawinit>" << endl << "Example: ./gtsam soninput.csv caminput.csv truth.csv 0 0 0 0 0 90" << endl;
+      cout << "Not Enough Args. Usage: ./gtsam <sonar input CSV file with x,y,theta> <camera input CSV file with x,y,z,roll,pitch,yaw> <OPTIONAL truth CSV file with x,y,yaw> <OPTIONAL xinit> <OPTIONAL yinit> <OPTIONAL zinit> <OPTIONAL rollinit> <OPTIONAL pitchinit> <OPTIONAL yawinit> <OPTIONAL dataset source>" << endl << "Example: ./gtsam soninput.csv caminput.csv truth.csv 0 0 0 0 0 90 2" << endl;
       return 0;
     }
   else
@@ -140,6 +146,10 @@ int main(int argc, char** argv)
     pitchinit = atof(argv[8])*PI/180;
   if(argc > 9) 
     yawinit = atof(argv[9])*PI/180;
+
+  //dataset type:
+  if(argc > 10) 
+    datasetType = atoi(argv[10]);
 
   cout << "Initial Global Values (x,y,z,roll,pitch,yaw) = " << xinit << "," << yinit << "," << zinit << "," << rollinit << "," << pitchinit << "," << yawinit << endl;
 
@@ -555,6 +565,11 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
       t1cam_arr[i] = round(TIME_NODE_MULT*(double)(atof(tmpstring.c_str())));
       getline(inFileCam,tmpstring,';');
       t2cam_arr[i] = round(TIME_NODE_MULT*(double)(atof(tmpstring.c_str())));
+      if(datasetType==COLORADO_DATA) //AMS added 9/7/15 to handle framerates
+	{ //Colorado sonar/camera data should be synched. Use same timestamps.
+	  t1cam_arr[i]=t1son_arr[i];
+	  t2cam_arr[i]=t2son_arr[i];
+	}
       if(VERBOSE)
 	cout << "cam t1,t2 = " << t1cam_arr[i] << "," << t2cam_arr[i] << endl;
 
@@ -2047,7 +2062,8 @@ cout << "DIDN'T FIND x HEADING! - " << tmpstring << endl;
 	      //while(abs(((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0-t2truth_arr[iTruth]) > abs(((double)nodeNum/TIME_NODE_MULT)+SONAR_TIME0-t2truth_arr[iTruth+1]))
 	      while(abs((double)nodeNum/TIME_NODE_MULT + SONAR_TIME0 - t2truth_arr[iTruth]) > abs((double)nodeNum/TIME_NODE_MULT + SONAR_TIME0 - t2truth_arr[iTruth+1]))
 		{
-		  if(iTruth < lengthTruth-2)//only increment if not at end
+		  //cout << "DEBUG1:" << iTruth << "/" << lengthTruth << "=" << t2truth_arr[iTruth] << "," << t2truth_arr[iTruth+1] << endl;
+		  if(iTruth < lengthTruth-1)//only increment if not at end
 		    iTruth++; //increment until find closest time
 		}
 		if(iTruth > 0)
